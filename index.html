@@ -7,24 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-// Init Supabase immediately — must be after the CDN script above
-let _supa = null;
-window.addEventListener('load', () => {
-  _supa = window.supabase.createClient(
-    'https://ybhzjypcdotvlciqgrpl.supabase.co',
-    'sb_publishable_3dKrAuijgGx0naYhf8zAMQ_ayKhiULp'
-  );
-  // If already authenticated, skip login
-  if (sessionStorage.getItem('lagapp_auth') === '1') {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('loadingScreen').style.display = 'flex';
-    loadFromSupabase();
-  } else {
-    document.getElementById('loginPassword').focus();
-  }
-});
-</script>
+
 <style>
 :root {
   --green-dark: #0d2b18; --green: #164d2c; --green-mid: #1f6b3c;
@@ -695,37 +678,28 @@ const defaultData = {
 // ═══════════════════════════════════════════════════════
 async function checkLogin() {
   const pw = document.getElementById('loginPassword').value.trim();
-  if (!pw) return;
+  const errEl = document.getElementById('loginError');
   const btn = document.querySelector('#loginScreen button');
-  btn.textContent = '...'; btn.disabled = true;
-  // Wait for Supabase client to be ready
-  let attempts = 0;
-  while (typeof _supa === 'undefined' && attempts < 20) {
-    await new Promise(r => setTimeout(r, 100));
-    attempts++;
-  }
-  if (typeof _supa === 'undefined') {
-    document.getElementById('loginError').textContent = 'Kunde inte ansluta. Ladda om sidan.';
-    document.getElementById('loginError').style.display = 'block';
-    btn.textContent = 'Logga in'; btn.disabled = false;
-    return;
-  }
+  if (!pw) { errEl.textContent = 'Ange lösenord.'; errEl.style.display='block'; return; }
+  btn.textContent = 'Kontrollerar...'; btn.disabled = true;
+  errEl.style.display = 'none';
   try {
     const { data, error } = await _supa.from('settings').select('value').eq('key','password').single();
-    const correctPw = data?.value || '';
-    if (pw === correctPw) {
+    if (error) throw error;
+    if (pw === (data?.value||'')) {
       sessionStorage.setItem('lagapp_auth', '1');
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('loadingScreen').style.display = 'flex';
       loadFromSupabase();
     } else {
-      document.getElementById('loginError').style.display = 'block';
+      errEl.textContent = 'Fel lösenord, försök igen.';
+      errEl.style.display = 'block';
       document.getElementById('loginPassword').value = '';
       document.getElementById('loginPassword').focus();
     }
   } catch(err) {
-    document.getElementById('loginError').textContent = 'Kunde inte ansluta till servern.';
-    document.getElementById('loginError').style.display = 'block';
+    errEl.textContent = 'Anslutningsfel – kontrollera nätverket och försök igen.';
+    errEl.style.display = 'block';
   }
   btn.textContent = 'Logga in'; btn.disabled = false;
 }
@@ -2357,8 +2331,20 @@ function buildDesktopNav() {
 }
 
 // ═══════════════════════════════════════════════════════
-// INIT — handled by window.load above
+// INIT
 // ═══════════════════════════════════════════════════════
+const _supa = window.supabase.createClient(
+  'https://ybhzjypcdotvlciqgrpl.supabase.co',
+  'sb_publishable_3dKrAuijgGx0naYhf8zAMQ_ayKhiULp'
+);
+
+if (sessionStorage.getItem('lagapp_auth') === '1') {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'flex';
+  loadFromSupabase();
+} else {
+  setTimeout(() => document.getElementById('loginPassword')?.focus(), 100);
+}
 </script>
 </body>
 </html>
