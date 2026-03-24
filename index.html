@@ -8,13 +8,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// Init Supabase early so it's ready before user clicks login
-let _supa;
-document.addEventListener('DOMContentLoaded', () => {
+// Init Supabase immediately — must be after the CDN script above
+let _supa = null;
+window.addEventListener('load', () => {
   _supa = window.supabase.createClient(
     'https://ybhzjypcdotvlciqgrpl.supabase.co',
     'sb_publishable_3dKrAuijgGx0naYhf8zAMQ_ayKhiULp'
   );
+  // If already authenticated, skip login
+  if (sessionStorage.getItem('lagapp_auth') === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('loadingScreen').style.display = 'flex';
+    loadFromSupabase();
+  } else {
+    document.getElementById('loginPassword').focus();
+  }
 });
 </script>
 <style>
@@ -2321,12 +2329,17 @@ function logout() {
 
 async function resetAllData() {
   if (!confirm('Är du säker? All data raderas permanent och kan inte återställas.')) return;
+  showToast('Raderar data...');
   try {
-    await _supa.from('matches').delete().neq('id','__none__');
-    await _supa.from('coaches').delete().neq('id',0);
-    await _supa.from('players').delete().neq('id',0);
-    await _supa.from('teams').delete().neq('id','__none__');
-  } catch(e) { console.error(e); }
+    // Get all team ids first, then delete in correct order (FK constraints)
+    const teamIds = Object.keys(teams);
+    for (const tid of teamIds) {
+      await _supa.from('matches').delete().eq('team_id', tid);
+      await _supa.from('coaches').delete().eq('team_id', tid);
+      await _supa.from('players').delete().eq('team_id', tid);
+      await _supa.from('teams').delete().eq('id', tid);
+    }
+  } catch(e) { console.error('Reset error:', e); }
   localStorage.removeItem('lagapp_v6');
   localStorage.removeItem('lagapp_team');
   location.reload();
@@ -2344,15 +2357,8 @@ function buildDesktopNav() {
 }
 
 // ═══════════════════════════════════════════════════════
-// INIT
+// INIT — handled by window.load above
 // ═══════════════════════════════════════════════════════
-if (sessionStorage.getItem('lagapp_auth') === '1') {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('loadingScreen').style.display = 'flex';
-  loadFromSupabase();
-} else {
-  document.getElementById('loginPassword').focus();
-}
 </script>
 </body>
 </html>
