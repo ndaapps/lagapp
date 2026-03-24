@@ -1,0 +1,2126 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lagapp</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --green-dark: #0d2b18; --green: #164d2c; --green-mid: #1f6b3c;
+  --green-light: #3dba74; --accent: #f5c518; --accent2: #ff6b35;
+  --bg: #0a1a10; --surface: #111e15; --surface2: #182a1e; --surface3: #1e3526;
+  --border: #243b2c; --text: #e4efe7; --muted: #6a9478; --white: #fff;
+  --danger: #e74c3c; --loan: #a78bfa; --coach: #38bdf8;
+  --radius: 12px; --radius-sm: 8px; --nav-h: 64px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; overscroll-behavior: none; }
+
+/* APP SHELL */
+.app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: var(--bg); position: relative; }
+.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 50; }
+.brand { display: flex; align-items: center; gap: 8px; }
+.brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--accent); }
+.scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--nav-h) + 12px); }
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: var(--nav-h); background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border: none; background: none; font-family: 'Outfit', sans-serif; transition: color 0.15s; padding: 8px 4px; }
+.nav-btn .icon { font-size: 20px; transition: transform 0.15s; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active .icon { transform: scale(1.15); }
+
+/* PAGES */
+.page { display: none; padding: 14px; }
+.page.active { display: block; }
+.team-selector-bar { margin-bottom: 12px; }
+.team-selector-bar select { width: 100%; background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent); font-weight: 700; padding: 9px 12px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'Outfit', sans-serif; -webkit-appearance: none; }
+
+/* CARDS */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.card-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; color: var(--muted); margin-bottom: 12px; }
+
+/* STAT GRID */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 12px; text-align: center; }
+.stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 38px; color: var(--accent); line-height: 1; }
+.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+/* PLAYER ROW */
+.player-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid rgba(36,59,44,0.6); cursor: pointer; }
+.player-row:last-child { border-bottom: none; }
+.jersey { width: 32px; height: 32px; background: var(--green); border: 1.5px solid var(--green-light); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--accent); flex-shrink: 0; }
+.jersey.loan { border-color: var(--loan); color: var(--loan); }
+.player-info { flex: 1; min-width: 0; }
+.player-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-meta { display: flex; align-items: center; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
+.badge-gk  { background: rgba(245,197,24,0.15); color: var(--accent); }
+.badge-def { background: rgba(61,186,116,0.15); color: var(--green-light); }
+.badge-mid { background: rgba(56,189,248,0.15); color: var(--coach); }
+.badge-fwd { background: rgba(255,107,53,0.15); color: var(--accent2); }
+.badge-loan { background: rgba(167,139,250,0.15); color: var(--loan); }
+.badge-coach { background: rgba(56,189,248,0.12); color: var(--coach); }
+
+/* LEVEL BADGE — colored per level index */
+.lvl-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #111; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn-ghost:active { color: var(--text); }
+.btn-green { background: var(--green-mid); color: var(--white); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn-wa { background: #25D366; color: white; }
+.btn-full { width: 100%; }
+.btn-sm { padding: 6px 12px; font-size: 12px; }
+.icon-btn { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; background: none; border: 1px solid var(--border); border-radius: 7px; color: var(--muted); cursor: pointer; font-size: 13px; flex-shrink: 0; transition: all 0.15s; }
+.icon-btn:active { border-color: var(--danger); color: var(--danger); }
+
+/* FAB */
+.fab { position: fixed; bottom: calc(var(--nav-h) + 16px); right: 16px; width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 20px rgba(245,197,24,0.4); border: none; color: #111; z-index: 90; transition: transform 0.15s; }
+.fab:active { transform: scale(0.93); }
+.fab.hidden { display: none; }
+
+/* MATCH COLUMNS */
+.match-cols { display: grid; gap: 10px; margin-bottom: 12px; }
+.match-col-header { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1px; padding: 8px 10px; border-radius: 8px 8px 0 0; text-align: center; margin-bottom: 0; }
+.match-col-section { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 700; padding: 8px 4px 4px; }
+
+/* MATCH CARD */
+.match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s; }
+.match-card:active { border-color: var(--accent); }
+.match-card.past { opacity: 0.65; }
+.match-date-badge { background: var(--surface2); border-radius: 8px; padding: 6px 8px; text-align: center; flex-shrink: 0; min-width: 42px; }
+.match-day { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--accent); line-height: 1; }
+.match-mon { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+.match-info { flex: 1; min-width: 0; }
+.match-opp { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.match-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.match-result { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); flex-shrink: 0; }
+
+/* FIELD */
+.field-wrap { background: linear-gradient(180deg,#0e3d1a 0%,#144d22 30%,#0e3d1a 50%,#144d22 70%,#0e3d1a 100%); border-radius: var(--radius); border: 1.5px solid rgba(255,255,255,0.08); position: relative; width: 100%; padding-top: 120%; overflow: hidden; margin-bottom: 14px; }
+.field-inner { position: absolute; inset: 0; }
+.field-line-h { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.12); }
+.field-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22%; padding-top: 22%; border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; }
+.field-rows-container { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-evenly; padding: 14px 10px; }
+.field-row-players { display: flex; justify-content: space-evenly; align-items: center; }
+.field-player { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.field-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); border: 2px solid white; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: #111; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
+.field-dot.empty { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); border: 1.5px dashed rgba(255,255,255,0.25); box-shadow: none; }
+.field-dot.loan { background: var(--loan); color: white; }
+.field-pname { font-size: 9px; color: rgba(255,255,255,0.9); text-shadow: 0 1px 4px rgba(0,0,0,0.9); font-weight: 700; white-space: nowrap; }
+
+/* PLAYER SELECT */
+.psel-list { display: flex; flex-direction: column; gap: 5px; max-height: 55vh; overflow-y: auto; }
+.psel-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface2); cursor: pointer; transition: all 0.12s; }
+.psel-item.selected { border-color: var(--accent); background: rgba(245,197,24,0.07); }
+.psel-item.loan-item.selected { border-color: var(--loan); background: rgba(167,139,250,0.07); }
+.psel-item.coach-item.selected { border-color: var(--coach); background: rgba(56,189,248,0.07); }
+.psel-item.conflict { border-color: rgba(231,76,60,0.5); }
+.psel-item.conflict.selected { background: rgba(231,76,60,0.07); }
+.check-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--accent); flex-shrink: 0; }
+.psel-item.selected .check-circle { border-color: var(--accent); background: rgba(245,197,24,0.2); }
+.psel-item.loan-item.selected .check-circle { border-color: var(--loan); background: rgba(167,139,250,0.2); color: var(--loan); }
+.psel-item.coach-item.selected .check-circle { border-color: var(--coach); background: rgba(56,189,248,0.2); color: var(--coach); }
+.psel-divider { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 0 3px; font-weight: 700; }
+.psel-count { font-size: 11px; color: var(--muted); text-align: right; margin-bottom: 5px; }
+
+/* FORM */
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 5px; }
+.form-control { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'Outfit', sans-serif; -webkit-appearance: none; }
+.form-control:focus { outline: none; border-color: var(--green-light); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* TABS */
+.tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
+.tab { padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); color: var(--muted); background: none; font-family: 'Outfit', sans-serif; white-space: nowrap; transition: all 0.15s; }
+.tab.active { background: var(--accent); color: #111; border-color: var(--accent); }
+
+/* SHEET */
+.sheet-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: flex-end; }
+.sheet-backdrop.open { display: flex; }
+.sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 0 20px 32px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.25s ease; max-width: 480px; margin: 0 auto; }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 16px; }
+.sheet-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; margin-bottom: 16px; }
+.sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+
+/* WA PREVIEW */
+.wa-bubble { background: #075E54; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #dcf8c6; font-family: -apple-system, sans-serif; word-break: break-word; margin-bottom: 14px; }
+
+/* TOAST */
+.toast { position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface3); border: 1px solid var(--green-light); color: var(--text); padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 300; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* EMPTY */
+.empty-state { text-align: center; padding: 32px 20px; color: var(--muted); }
+.empty-icon { font-size: 36px; margin-bottom: 8px; }
+.empty-text { font-size: 14px; }
+
+/* DESKTOP */
+@media (min-width: 520px) {
+  .app { max-width: 100%; flex-direction: row; }
+  .bottom-nav { display: none; }
+  .desktop-sidebar { display: flex; flex-direction: column; width: 200px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); height: 100vh; position: sticky; top: 0; padding: 20px 0; }
+  .desktop-brand { padding: 0 16px 20px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .desktop-nav-item { display: flex; align-items: center; gap: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-left: 3px solid transparent; transition: all 0.15s; }
+  .desktop-nav-item:hover { color: var(--text); background: var(--surface2); }
+  .desktop-nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(245,197,24,0.06); }
+  .desktop-nav-icon { font-size: 17px; width: 22px; text-align: center; }
+  .main-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .header { max-width: none; }
+  .scroll-area { padding-bottom: 20px; }
+  .fab { right: 16px; }
+}
+@media (max-width: 519px) { .desktop-sidebar { display: none; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Desktop sidebar -->
+  <div class="desktop-sidebar">
+    <div class="desktop-brand">
+      <div class="brand"><span style="font-size:22px;">⚽</span><span class="brand-name">LAGAPP</span></div>
+    </div>
+    <div id="desktopNav"></div>
+  </div>
+
+  <div class="main-col">
+    <div class="header">
+      <div class="brand"><span style="font-size:20px;">⚽</span><span class="brand-name">LAGAPP</span></div>
+    </div>
+
+    <div class="scroll-area">
+
+      <!-- OVERVIEW -->
+      <div class="page active" id="page-overview">
+        <div class="team-selector-bar"><select id="td-overview" onchange="switchTeam(this.value)"></select></div>
+        <div class="stat-grid">
+          <div class="stat-card"><div class="stat-num" id="stat-players">0</div><div class="stat-label">Spelare</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-matches">0</div><div class="stat-label">Matcher</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-levels">0</div><div class="stat-label">Nivåer</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-form">–</div><div class="stat-label">Formation</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Närvaro – topp 8</div>
+          <div id="attendanceList"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Senaste matcher</div>
+          <div id="recentMatchList"></div>
+        </div>
+      </div>
+
+      <!-- PLAYERS -->
+      <div class="page" id="page-players">
+        <div class="team-selector-bar"><select id="td-players" onchange="switchTeam(this.value)"></select></div>
+        <div class="card" style="border-color:rgba(61,186,116,0.3);background:rgba(61,186,116,0.04);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:26px;">📥</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:700;">Importera spelare & tränare</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:1px;">Förnamn · Efternamn · Tröjnummer · Position · Nivåer · Typ</div>
+            </div>
+            <label class="btn btn-sm" style="background:rgba(61,186,116,0.15);color:var(--green-light);border:1px solid rgba(61,186,116,0.3);cursor:pointer;">Välj fil<input type="file" accept=".xlsx,.xls" id="playerImportInput" style="display:none;" onchange="handlePlayerImport(this)"></label>
+          </div>
+          <div id="playerImportStatus" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+        </div>
+        <div class="tabs" id="playerTabs">
+          <button class="tab active" onclick="switchPlayerTab('squad')">Trupp</button>
+          <button class="tab" onclick="switchPlayerTab('loan')">Inlånade</button>
+          <button class="tab" onclick="switchPlayerTab('coaches')">Tränare</button>
+        </div>
+        <div id="squadList"></div>
+        <div id="loanList" style="display:none;"></div>
+        <div id="coachesList" style="display:none;"></div>
+      </div>
+
+      <!-- UTTAGNING -->
+      <div class="page" id="page-lineup">
+        <div class="team-selector-bar"><select id="td-lineup" onchange="switchTeam(this.value)"></select></div>
+        <div class="card">
+          <div class="card-title">Välj match</div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <select class="form-control" id="matchDropdown" onchange="selectMatch(this.value)">
+              <option value="">– Välj en match –</option>
+            </select>
+          </div>
+          <div id="matchInfoDisplay" style="display:none;">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;margin-bottom:10px;">
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:700;" id="lineupMatchOpp"></div>
+                <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="lineupMatchMeta"></div>
+              </div>
+              <div id="lineupLevelBadge"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label>Samling kl.</label><input class="form-control" type="time" id="matchTime" value="09:30"></div>
+              <div class="form-group"><label>Plats</label><input class="form-control" id="matchVenue" placeholder="Hemmaplan"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+              <button class="btn btn-wa btn-full" onclick="openWhatsApp()">📱 Skicka till WhatsApp</button>
+              <button class="btn btn-green btn-full" id="saveLineupBtn" onclick="saveLineup()">💾 Spara uttagning</button>
+            </div>
+          </div>
+          <div id="matchInfoEmpty" style="text-align:center;padding:10px 0;color:var(--muted);font-size:13px;">
+            Skapa matcher under <strong>Matcher</strong>-fliken
+          </div>
+        </div>
+        <!-- Saved lineups summary -->
+        <div id="savedLineupsBar" style="display:none;margin-bottom:4px;">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:8px;">Sparade uttagningar</div>
+        </div>
+
+        <!-- Availability import -->
+        <div class="card" style="border-color:rgba(245,197,24,0.3);background:rgba(245,197,24,0.04);" id="importCard" style="display:none;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:26px;">📊</div>
+            <div style="flex:1;"><div style="font-size:14px;font-weight:700;">Importera tillgänglighet</div><div style="font-size:12px;color:var(--muted);margin-top:1px;">Excel-fil från ert system</div></div>
+            <label class="btn btn-primary btn-sm" style="cursor:pointer;">Välj fil<input type="file" accept=".xlsx,.xls" id="excelImportInput" style="display:none;" onchange="handleExcelImport(this)"></label>
+          </div>
+          <div id="importStatus" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+        </div>
+
+        <!-- Player selection -->
+        <div class="card" id="playerSelCard" style="display:none;">
+          <div class="card-title">Välj spelare & tränare</div>
+          <div id="lineupFilterBar" style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+          <div class="tabs" id="lineupTabs">
+            <button class="tab active" onclick="switchLineupTab('players')">Spelare</button>
+            <button class="tab" onclick="switchLineupTab('coaches')">Tränare</button>
+          </div>
+          <div id="lineupFilterBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+          <div id="lineupPlayerList"></div>
+          <div id="lineupCoachList" style="display:none;"></div>
+        </div>
+
+
+      </div>
+
+      <!-- MATCHES -->
+      <div class="page" id="page-matches">
+        <div class="team-selector-bar"><select id="td-matches" onchange="switchTeam(this.value)"></select></div>
+        <!-- Add match -->
+        <div class="card" style="border-color:rgba(245,197,24,0.3);background:rgba(245,197,24,0.04);">
+          <div class="card-title">Ny match</div>
+          <div class="form-row">
+            <div class="form-group"><label>Motståndare</label><input class="form-control" id="newMatchOpp" placeholder="IFK Göteborg"></div>
+            <div class="form-group"><label>Datum</label><input class="form-control" type="date" id="newMatchDate"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Matchstart</label><input class="form-control" type="time" id="newMatchKickoff" value="11:00"></div>
+            <div class="form-group"><label>Matchlängd (min)</label><input class="form-control" type="number" id="newMatchDuration" value="60" min="10" max="120"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Samling kl.</label><input class="form-control" type="time" id="newMatchGather" value="10:00"></div>
+            <div class="form-group"><label>Nivå</label><select class="form-control" id="newMatchLevel"></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Arena/plats</label><input class="form-control" id="newMatchVenue" placeholder="t.ex. Ängsvallen"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Hemma / Borta</label>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <label id="hbHome" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);">
+                  <input type="radio" name="newMatchHB" value="hemma" style="display:none;" onchange="toggleHB('home')"> 🏠 Hemma
+                </label>
+                <label id="hbAway" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border-radius:8px;border:1.5px solid var(--border);cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);">
+                  <input type="radio" name="newMatchHB" value="borta" style="display:none;" onchange="toggleHB('away')"> ✈️ Borta
+                </label>
+              </div>
+            </div>
+            <div class="form-group"><label>Resultat</label><input class="form-control" id="newMatchResult" placeholder="2–1"></div>
+            <div class="form-group"><label>Resultat</label><input class="form-control" id="newMatchResult" placeholder="2–1"></div>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="addMatch()">+ Lägg till match</button>
+        </div>
+        <!-- Excel import -->
+        <div class="card" style="border-color:rgba(56,189,248,0.3);background:rgba(56,189,248,0.04);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:26px;">📊</div>
+            <div style="flex:1;"><div style="font-size:14px;font-weight:700;">Importera matcher</div><div style="font-size:12px;color:var(--muted);">Lagnamn · Datum · Motståndare · Avspark · Samling · Matchlängd · Plats · Hemma/Borta · Resultat · Nivå</div></div>
+            <label class="btn btn-sm" style="background:rgba(56,189,248,0.15);color:var(--coach);border:1px solid rgba(56,189,248,0.3);cursor:pointer;">Välj fil<input type="file" accept=".xlsx,.xls" id="matchImportInput" style="display:none;" onchange="handleMatchImport(this)"></label>
+          </div>
+          <div id="matchImportStatus" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;font-size:13px;"></div>
+        </div>
+        <!-- Match list by level columns -->
+        <div id="matchColumns"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div class="team-selector-bar"><select id="td-settings" onchange="switchTeam(this.value)"></select></div>
+        <div class="card">
+          <div class="card-title">Nivåer</div>
+          <div id="levelsList"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+            <input class="form-control" id="newLevelName" placeholder="Ny nivå, t.ex. Lätt" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="addLevel()">+ Lägg till</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Formation</div>
+          <div class="form-row">
+            <div class="form-group"><label>Spelform</label>
+              <select class="form-control" id="formatSelect" onchange="setFormat(parseInt(this.value))">
+                <option value="11">11-manna</option><option value="9">9-manna</option><option value="7">7-manna</option>
+              </select>
+            </div>
+            <div class="form-group"><label>Formation</label>
+              <select class="form-control" id="formationSelect" onchange="setFormation(this.value)"></select>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Säsonger</div>
+          <div id="seasonsList"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+            <input class="form-control" id="newSeasonName" placeholder="Ny säsong, t.ex. Vår 2026" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="addSeason()">+ Skapa</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Mina lag</div>
+          <div id="teamListSettings"></div>
+          <button class="btn btn-ghost btn-full" style="margin-top:12px;" onclick="openAddTeamSheet()">+ Nytt lag</button>
+        </div>
+        <div class="card" style="border-color:rgba(231,76,60,0.3);background:rgba(231,76,60,0.04);">
+          <div class="card-title" style="color:var(--danger);">Rensa data</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Tar bort all data och återställer appen till tomt läge. Kan inte ångras.</div>
+          <button class="btn btn-danger btn-full" onclick="resetAllData()">🗑 Rensa all data</button>
+        </div>
+      </div>
+
+    </div><!-- /scroll-area -->
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="showPage('overview')"  id="nav-overview"><span class="icon">📊</span>Översikt</button>
+  <button class="nav-btn"        onclick="showPage('players')"   id="nav-players"><span class="icon">👥</span>Spelare</button>
+  <button class="nav-btn"        onclick="showPage('lineup')"    id="nav-lineup"><span class="icon">📋</span>Uttagning</button>
+  <button class="nav-btn"        onclick="showPage('matches')"   id="nav-matches"><span class="icon">🏆</span>Matcher</button>
+  <button class="nav-btn"        onclick="showPage('settings')"  id="nav-settings"><span class="icon">⚙️</span>Inställningar</button>
+</nav>
+
+<button class="fab hidden" id="fab" onclick="onFab()">＋</button>
+<div class="toast" id="toast"></div>
+
+<!-- ===== SHEETS ===== -->
+
+<!-- Add Player -->
+<div class="sheet-backdrop" id="addPlayerSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="addPlayerTitle">Lägg till spelare</div>
+    <div class="form-row">
+      <div class="form-group"><label>Förnamn</label><input class="form-control" id="newFirst" placeholder="Förnamn"></div>
+      <div class="form-group"><label>Efternamn</label><input class="form-control" id="newLast" placeholder="Efternamn"></div>
+    </div>
+    <div class="form-row" id="jerseyRow">
+      <div class="form-group"><label>Tröjnummer</label><input class="form-control" id="newJersey" type="number" placeholder="1–99" min="1" max="99"></div>
+      <div class="form-group">
+        <label>Position (välj flera)</label>
+        <div id="posCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+      </div>
+    </div>
+    <div class="form-group" id="loanGroup" style="display:none;"><label>Notering</label><input class="form-control" id="loanNote" placeholder="t.ex. Från IFK Mora"></div>
+    <div class="form-group" id="newLevelGroup">
+      <label>Nivåer</label>
+      <div id="newLevelCheckboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('addPlayerSheet')">Avbryt</button>
+      <button class="btn btn-primary" style="flex:2" id="addPlayerBtn" onclick="addPerson()">Lägg till</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Coach -->
+<div class="sheet-backdrop" id="addCoachSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Lägg till tränare</div>
+    <div class="form-row">
+      <div class="form-group"><label>Förnamn</label><input class="form-control" id="coachFirst" placeholder="Förnamn"></div>
+      <div class="form-group"><label>Efternamn</label><input class="form-control" id="coachLast" placeholder="Efternamn"></div>
+    </div>
+    <div class="form-group"><label>Roll</label>
+      <select class="form-control" id="coachRole"><option>Huvudtränare</option><option>Assistent</option><option>Målvaktstränare</option><option>Lagledare</option></select>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('addCoachSheet')">Avbryt</button>
+      <button class="btn btn-primary" style="flex:2" onclick="addCoach()">Lägg till</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Team -->
+<div class="sheet-backdrop" id="addTeamSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Nytt lag</div>
+    <div class="form-group"><label>Lagnamn</label><input class="form-control" id="newTeamName" placeholder="t.ex. P14 – Allsvenskan"></div>
+    <div class="form-group"><label>Spelform</label>
+      <select class="form-control" id="newTeamFormat"><option value="11">11-manna</option><option value="9">9-manna</option><option value="7">7-manna</option></select>
+    </div>
+    <div class="form-group">
+      <label>Nivåer (valfritt)</label>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">Lägg till en eller flera nivåer, t.ex. Lätt och Medel</div>
+      <div id="newTeamLevelsContainer" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <div style="display:flex;gap:8px;">
+        <input class="form-control" id="newTeamLevelInput" placeholder="Nivånamn, t.ex. Lätt" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();addNewTeamLevel();}">
+        <button class="btn btn-ghost btn-sm" onclick="addNewTeamLevel()">+ Lägg till</button>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('addTeamSheet')">Avbryt</button>
+      <button class="btn btn-primary" style="flex:2" onclick="addTeam()">Skapa lag</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Team -->
+<div class="sheet-backdrop" id="editTeamSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Redigera lag</div>
+    <input type="hidden" id="editTeamId">
+    <div class="form-group"><label>Lagnamn</label><input class="form-control" id="editTeamName"></div>
+    <div class="form-group"><label>Spelform</label>
+      <select class="form-control" id="editTeamFormat"><option value="11">11-manna</option><option value="9">9-manna</option><option value="7">7-manna</option></select>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('editTeamSheet')">Avbryt</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveEditTeam()">Spara</button>
+    </div>
+  </div>
+</div>
+
+<!-- Match detail -->
+<div class="sheet-backdrop" id="matchDetailSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
+      <div style="flex:1;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;" id="mdOpp"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="mdMeta"></div>
+      </div>
+      <div id="mdLevel" style="margin-top:4px;"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group"><label>Avspark</label><input class="form-control" type="time" id="mdKickoff"></div>
+      <div class="form-group"><label>Samling</label><input class="form-control" type="time" id="mdGather"></div>
+    </div>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group"><label>Arena</label><input class="form-control" id="mdVenue" placeholder="t.ex. Ängsvallen"></div>
+      <div class="form-group">
+        <label>Hemma / Borta</label>
+        <select class="form-control" id="mdHomeAway">
+          <option value="">–</option>
+          <option value="hemma">🏠 Hemma</option>
+          <option value="borta">✈️ Borta</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-bottom:12px;">
+      <div class="form-group"><label>Resultat (t.ex. 2–1)</label><input class="form-control" id="mdResult" placeholder="2–1"></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:6px;">Mål för<span style="font-size:10px;color:var(--muted);">(auto)</span></label>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+          <input class="form-control" type="number" id="mdGoalsFor" placeholder="0" min="0" style="flex:1;">
+          <span style="color:var(--muted);">–</span>
+          <input class="form-control" type="number" id="mdGoalsAgainst" placeholder="0" min="0" style="flex:1;">
+        </div>
+      </div>
+    </div>
+    <div class="card-title">Uttagning</div>
+    <div id="mdLineup" style="margin-bottom:12px;max-height:35vh;overflow-y:auto;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeSheet('matchDetailSheet')">Stäng</button>
+      <button class="btn btn-danger btn-sm" onclick="removeMatchFromDetail()">🗑 Ta bort</button>
+      <button class="btn btn-primary" style="flex:1" onclick="saveMatchDetail()">Spara</button>
+    </div>
+  </div>
+</div>
+
+<!-- Player profile -->
+<div class="sheet-backdrop" id="playerProfileSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div class="jersey" id="profileJersey" style="width:44px;height:44px;font-size:22px;"></div>
+      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;" id="profileName"></div><div id="profileMeta" style="font-size:12px;color:var(--muted);margin-top:2px;"></div></div>
+    </div>
+    <div class="stat-grid" style="margin-bottom:14px;">
+      <div class="stat-card" style="padding:12px;"><div class="stat-num" style="font-size:30px;" id="profileTotal">0</div><div class="stat-label">Totalt</div></div>
+      <div class="stat-card" style="padding:12px;"><div class="stat-num" style="font-size:30px;" id="profileSeason">0</div><div class="stat-label">Denna säsong</div></div>
+    </div>
+    <div class="card-title">Matcher</div>
+    <div id="profileMatchList" style="max-height:40vh;overflow-y:auto;"></div>
+    <button class="btn btn-ghost btn-full" style="margin-top:14px;" onclick="closeSheet('playerProfileSheet')">Stäng</button>
+  </div>
+</div>
+
+<!-- WhatsApp -->
+<div class="sheet-backdrop" id="waSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📱 WhatsApp</div>
+    <!-- Step 1: pick matches -->
+    <div id="waPickStep">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Välj matcher att inkludera i meddelandet:</div>
+      <div id="waMatchPicker" style="display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow-y:auto;margin-bottom:14px;"></div>
+      <button class="btn btn-wa btn-full" onclick="buildWAMessage()">Bygg meddelande</button>
+      <button class="btn btn-ghost btn-full" style="margin-top:8px;" onclick="closeSheet('waSheet')">Avbryt</button>
+    </div>
+    <!-- Step 2: preview -->
+    <div id="waPreviewStep" style="display:none;">
+      <div class="wa-bubble" id="waBubble"></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="btn btn-wa btn-full" onclick="sendWA()">Öppna i WhatsApp</button>
+        <button class="btn btn-ghost btn-full" onclick="copyWA()">📋 Kopiera text</button>
+        <button class="btn btn-ghost btn-full" onclick="backToWAPick()">← Ändra urval</button>
+        <button class="btn btn-ghost btn-full" onclick="closeSheet('waSheet')">Stäng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════
+const FORMATIONS = { 11:['4-3-3','4-4-2','3-5-2','4-2-3-1','5-3-2'], 9:['3-3-2','3-2-3','2-4-2','4-2-2'], 7:['2-3-1','3-2-1','2-2-2','1-3-2'] };
+const FORMATION_ROWS = { '4-3-3':[[1],[2,3,4,5],[6,7,8],[9,10,11]],'4-4-2':[[1],[2,3,4,5],[6,7,8,9],[10,11]],'3-5-2':[[1],[2,3,4],[5,6,7,8,9],[10,11]],'4-2-3-1':[[1],[2,3,4,5],[6,7],[8,9,10],[11]],'5-3-2':[[1],[2,3,4,5,6],[7,8,9],[10,11]],'3-3-2':[[1],[2,3,4],[5,6,7],[8,9]],'3-2-3':[[1],[2,3,4],[5,6],[7,8,9]],'2-4-2':[[1],[2,3],[4,5,6,7],[8,9]],'4-2-2':[[1],[2,3,4,5],[6,7],[8,9]],'2-3-1':[[1],[2,3],[4,5,6],[7]],'3-2-1':[[1],[2,3,4],[5,6],[7]],'2-2-2':[[1],[2,3],[4,5],[6,7]],'1-3-2':[[1],[2],[3,4,5],[6,7]] };
+const POS_BADGE = { 'Målvakt':'badge-gk','Försvarare':'badge-def','Mittfältare':'badge-mid','Forward':'badge-fwd' };
+const POSITIONS = ['Målvakt','Försvarare','Mittfältare','Forward'];
+function posBadgesHTML(pos) {
+  const arr = Array.isArray(pos) ? pos : [pos];
+  return arr.map(p=>`<span class="badge ${POS_BADGE[p]||'badge-mid'}">${p}</span>`).join('');
+}
+function posShortHTML(pos) {
+  const arr = Array.isArray(pos) ? pos : [pos];
+  return arr.map(p=>`<span class="badge ${POS_BADGE[p]||'badge-mid'}" style="font-size:10px;">${p.slice(0,3)}</span>`).join('');
+}
+// Level colors cycling
+const LEVEL_COLORS = [
+  {bg:'rgba(61,186,116,0.15)',color:'#3dba74'},
+  {bg:'rgba(56,189,248,0.15)',color:'#38bdf8'},
+  {bg:'rgba(245,197,24,0.15)',color:'#f5c518'},
+  {bg:'rgba(255,107,53,0.15)',color:'#ff6b35'},
+];
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentTeam = 'p13';
+let currentPlayerTab = 'squad';
+let currentLineupTab = 'players';
+let selectedMatchIdx = -1;
+let addingType = 'squad';
+let detailMatchIdx = -1;
+let currentPage = 'overview';
+
+const defaultData = {
+  p13: {
+    name:'P13 – Division 3', format:11, formation:'4-3-3',
+    levels:[ {id:'l1',name:'Lätt'}, {id:'l2',name:'Medel'} ],
+    activeSeason: null, seasons:[],
+    players:[
+      {id:1,first:'Linus',last:'Berg',jersey:1,pos:'Målvakt',type:'squad'},
+      {id:2,first:'Oscar',last:'Ek',jersey:2,pos:'Försvarare',type:'squad'},
+      {id:3,first:'Elias',last:'Holm',jersey:3,pos:'Försvarare',type:'squad'},
+      {id:4,first:'Viktor',last:'Sand',jersey:4,pos:'Försvarare',type:'squad'},
+      {id:5,first:'Hugo',last:'Lund',jersey:5,pos:'Försvarare',type:'squad'},
+      {id:6,first:'Axel',last:'Mård',jersey:6,pos:'Mittfältare',type:'squad'},
+      {id:7,first:'Noah',last:'Björk',jersey:7,pos:'Mittfältare',type:'squad'},
+      {id:8,first:'Oliver',last:'Ström',jersey:8,pos:'Mittfältare',type:'squad'},
+      {id:9,first:'Emil',last:'Varg',jersey:9,pos:'Forward',type:'squad'},
+      {id:10,first:'Albin',last:'Falk',jersey:10,pos:'Forward',type:'squad'},
+      {id:11,first:'Max',last:'Ros',jersey:11,pos:'Forward',type:'squad'},
+    ],
+    coaches:[{id:101,first:'Erik',last:'Svensson',role:'Huvudtränare'},{id:102,first:'Anna',last:'Lindqvist',role:'Assistent'}],
+    matches:[
+      {id:'m1',date:'2026-03-15',opp:'IFK Mora',result:'3–1',levelId:'l2',lineup:[1,2,3,4,5,6,7,8,9,10,11],coaches:[101],venue:'Hemmaplan'},
+      {id:'m2',date:'2026-03-15',opp:'BK Norr',result:'2–0',levelId:'l1',lineup:[1,2,3,6,7,8,9,10,11],coaches:[102],venue:'Borta'},
+      {id:'m3',date:'2026-04-05',opp:'Djurgården U',result:'',levelId:'l2',lineup:[],coaches:[],venue:''},
+      {id:'m4',date:'2026-04-05',opp:'IFK Visby',result:'',levelId:'l1',lineup:[],coaches:[],venue:''},
+    ],
+  }
+};
+const stored = localStorage.getItem('lagapp_v6');
+let teams = stored ? JSON.parse(stored) : null;
+if (!teams) {
+  // First run — start empty, don't use defaultData
+  teams = { mitt_lag: { name:'Mitt lag', format:11, formation:'4-3-3', levels:[], players:[], coaches:[], matches:[], seasons:[], activeSeason:null } };
+  currentTeam = 'mitt_lag';
+}
+
+function save() { try { localStorage.setItem('lagapp_v6', JSON.stringify(teams)); } catch(e){} }
+function getTeam() { return teams[currentTeam]; }
+function getLevels() { return getTeam().levels || []; }
+function getLevelById(id) { return getLevels().find(l=>l.id===id); }
+function getLevelColor(levelId) { const idx = getLevels().findIndex(l=>l.id===levelId); return LEVEL_COLORS[idx % LEVEL_COLORS.length] || LEVEL_COLORS[0]; }
+function levelBadgeHTML(levelId) { if (!levelId) return ''; const lv = getLevelById(levelId); if (!lv) return ''; const c = getLevelColor(levelId); return `<span class="lvl-badge" style="background:${c.bg};color:${c.color};">${lv.name}</span>`; }
+function getActiveSeason() { return getTeam().activeSeason || null; }
+function countMatchesForPlayer(pid, teamId, seasonId) { const t = teams[teamId||currentTeam]; if(!t) return 0; return (t.matches||[]).filter(m=>(m.lineup||[]).includes(pid)&&(!seasonId||m.seasonId===seasonId)).length; }
+function countMatchesForCoach(cid, teamId, seasonId) { const t = teams[teamId||currentTeam]; if(!t) return 0; return (t.matches||[]).filter(m=>(m.coaches||[]).includes(cid)&&(!seasonId||m.seasonId===seasonId)).length; }
+const norm = s => s.toLowerCase().replace(/\s+/g,' ').trim();
+
+// ═══════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.desktop-nav-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p)?.classList.add('active');
+  document.getElementById('dn-'+p)?.classList.add('active');
+  currentPage = p;
+  document.getElementById('fab').classList.toggle('hidden', p!=='players');
+  updateAllDropdowns();
+  if (p==='overview') renderOverview();
+  if (p==='players') renderPlayers();
+  if (p==='lineup') { populateMatchDropdown(); renderLineup(); }
+  if (p==='matches') { populateNewMatchLevel(); renderMatchColumns(); setDefaultDate('newMatchDate'); }
+  if (p==='settings') renderSettings();
+  document.getElementById('scrollArea')?.scrollTo(0,0);
+}
+
+function switchTeam(id) {
+  if (!teams[id]) return;
+  currentTeam = id;
+  selectedMatchIdx = -1;
+  updateAllDropdowns();
+  showPage(currentPage);
+}
+
+function updateAllDropdowns() {
+  ['overview','players','lineup','matches','settings'].forEach(p => {
+    const el = document.getElementById('td-'+p);
+    if (!el) return;
+    el.innerHTML = Object.entries(teams).map(([id,t])=>`<option value="${id}" ${id===currentTeam?'selected':''}>${t.name}</option>`).join('');
+  });
+}
+
+function switchPlayerTab(tab) {
+  currentPlayerTab = tab;
+  document.querySelectorAll('#playerTabs .tab').forEach((t,i)=>t.classList.toggle('active',['squad','loan','coaches'][i]===tab));
+  document.getElementById('squadList').style.display = tab==='squad'?'block':'none';
+  document.getElementById('loanList').style.display = tab==='loan'?'block':'none';
+  document.getElementById('coachesList').style.display = tab==='coaches'?'block':'none';
+}
+
+function switchLineupTab(tab) {
+  currentLineupTab = tab;
+  document.querySelectorAll('#lineupTabs .tab').forEach((t,i)=>t.classList.toggle('active',['players','coaches'][i]===tab));
+  document.getElementById('lineupPlayerList').style.display = tab==='players'?'block':'none';
+  document.getElementById('lineupCoachList').style.display = tab==='coaches'?'block':'none';
+}
+
+function onFab() {
+  if (currentPage!=='players') return;
+  if (currentPlayerTab==='coaches') { document.getElementById('coachFirst').value=''; document.getElementById('coachLast').value=''; openSheet('addCoachSheet'); }
+  else { addingType = currentPlayerTab==='loan'?'loan':'squad'; setupAddSheet(); openSheet('addPlayerSheet'); }
+}
+
+function setupAddSheet(fromLineup=false) {
+  const isLoan = addingType==='loan';
+  document.getElementById('addPlayerTitle').textContent = isLoan?'Lägg till inlånad':'Lägg till spelare';
+  document.getElementById('addPlayerBtn').textContent = isLoan?'Lägg till inlånad':'Lägg till';
+  document.getElementById('loanGroup').style.display = isLoan?'block':'none';
+  ['newFirst','newLast','newJersey','loanNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  // Populate position checkboxes
+  const posEl = document.getElementById('posCheckboxes');
+  if (posEl) {
+    posEl.innerHTML = POSITIONS.map((pos, i) => {
+      const cls = POS_BADGE[pos]||'badge-mid';
+      const colors = { 'badge-gk':'#f5c518','badge-def':'#3dba74','badge-mid':'#38bdf8','badge-fwd':'#ff6b35' };
+      const c = colors[cls]||'var(--accent)';
+      return `<label style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;border:1.5px solid var(--border);cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);transition:all 0.15s;" data-pos="${i}">
+        <input type="checkbox" value="${pos}" style="display:none;" onchange="togglePosChk(this,${i})">
+        ${pos}
+      </label>`;
+    }).join('');
+  }
+  populateLevelCheckboxes('newLevelCheckboxes', []);
+}
+
+function populateLevelCheckboxes(containerId, selectedIds) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const levels = getLevels();
+  if (levels.length === 0) {
+    el.innerHTML = '<span style="font-size:12px;color:var(--muted);">Inga nivåer – lägg till i Inställningar</span>';
+    document.getElementById('newLevelGroup').style.display = 'none';
+    return;
+  }
+  document.getElementById('newLevelGroup').style.display = 'block';
+  el.innerHTML = levels.map(lv => {
+    const c = getLevelColor(lv.id);
+    const checked = selectedIds.includes(lv.id);
+    return `<label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;border:1.5px solid ${checked?c.color:'var(--border)'};background:${checked?c.bg:'transparent'};cursor:pointer;transition:all 0.15s;" id="lvlchk-${containerId}-${lv.id}">
+      <input type="checkbox" value="${lv.id}" style="display:none;" ${checked?'checked':''} onchange="toggleLvlCheckbox(this,'${containerId}','${lv.id}')">
+      <span style="font-size:13px;font-weight:600;color:${checked?c.color:'var(--muted)'};">${lv.name}</span>
+    </label>`;
+  }).join('');
+}
+
+function togglePosChk(cb, idx) {
+  const label = document.querySelector(`#posCheckboxes [data-pos="${idx}"]`);
+  if (!label) return;
+  const pos = cb.value;
+  const cls = POS_BADGE[pos]||'badge-mid';
+  const colors = { 'badge-gk':'#f5c518','badge-def':'#3dba74','badge-mid':'#38bdf8','badge-fwd':'#ff6b35' };
+  const c = colors[cls]||'var(--accent)';
+  if (cb.checked) {
+    label.style.borderColor=c; label.style.background=c+'22'; label.style.color=c;
+  } else {
+    label.style.borderColor='var(--border)'; label.style.background='transparent'; label.style.color='var(--muted)';
+  }
+}
+
+function getCheckedPositions() {
+  const el = document.getElementById('posCheckboxes');
+  if (!el) return [];
+  return [...el.querySelectorAll('input:checked')].map(cb=>cb.value);
+}
+
+function toggleLvlCheckbox(cb, containerId, lvId) {
+  const c = getLevelColor(lvId); const lv = getLevelById(lvId);
+  const label = document.getElementById(`lvlchk-${containerId}-${lvId}`);
+  if (!label) return;
+  if (cb.checked) {
+    label.style.borderColor = c.color; label.style.background = c.bg;
+    label.querySelector('span').style.color = c.color;
+  } else {
+    label.style.borderColor = 'var(--border)'; label.style.background = 'transparent';
+    label.querySelector('span').style.color = 'var(--muted)';
+  }
+}
+
+function getCheckedLevels(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return [];
+  return [...el.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+}
+
+function setDefaultDate(id) { const d=new Date(); d.setDate(d.getDate()+7); const el=document.getElementById(id); if(el) el.value=d.toISOString().split('T')[0]; }
+
+// ═══════════════════════════════════════════════════════
+// OVERVIEW
+// ═══════════════════════════════════════════════════════
+function renderOverview() {
+  const t = getTeam();
+  const season = getActiveSeason();
+  document.getElementById('stat-players').textContent = (t.players||[]).filter(p=>p.type==='squad').length;
+  document.getElementById('stat-matches').textContent = (t.matches||[]).length;
+  document.getElementById('stat-levels').textContent = (t.levels||[]).length;
+  document.getElementById('stat-form').textContent = t.formation||'4-3-3';
+
+  const allP = [
+    ...(t.players||[]).map(p=>({...p,dynM:countMatchesForPlayer(p.id,currentTeam,season)})),
+    ...(t.coaches||[]).map(c=>({...c,dynM:countMatchesForCoach(c.id,currentTeam,season)}))
+  ].sort((a,b)=>b.dynM-a.dynM).slice(0,8);
+  const max = allP[0]?.dynM||1;
+  document.getElementById('attendanceList').innerHTML = allP.map(p=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+      <div style="width:110px;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.first} ${p.last}</div>
+      <div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;"><div style="width:${p.dynM/max*100}%;height:100%;background:var(--green-light);border-radius:2px;"></div></div>
+      <div style="width:22px;text-align:right;font-size:13px;color:var(--muted);">${p.dynM}</div>
+    </div>`).join('');
+
+  const recent = [...(t.matches||[])].filter(m=>m.result).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
+  document.getElementById('recentMatchList').innerHTML = recent.length===0
+    ? '<div class="empty-state" style="padding:20px 0;"><div class="empty-icon" style="font-size:28px;">🏆</div><div class="empty-text">Inga spelade matcher</div></div>'
+    : recent.map(m=>{const d=new Date(m.date);return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div class="match-date-badge"><div class="match-day">${d.getDate()}</div><div class="match-mon">${d.toLocaleString('sv-SE',{month:'short'})}</div></div>
+        <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${m.opp}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${levelBadgeHTML(m.levelId)}</div></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);">${m.result}</div>
+      </div>`;}).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// PLAYERS
+// ═══════════════════════════════════════════════════════
+function renderPlayers() {
+  const t = getTeam();
+  const season = getActiveSeason();
+  const squad = (t.players||[]).filter(p=>p.type==='squad').sort((a,b)=>a.jersey-b.jersey);
+  const loans = (t.players||[]).filter(p=>p.type==='loan');
+  const coaches = t.coaches||[];
+  const allCnt = [...squad,...loans].map(p=>countMatchesForPlayer(p.id,currentTeam,season));
+  const maxM = Math.max(...allCnt,1);
+  const coachCnt = coaches.map(c=>countMatchesForCoach(c.id,currentTeam,season));
+  const maxC = Math.max(...coachCnt,1);
+
+  const squadHTML = squad.length===0
+    ? '<div class="empty-state"><div class="empty-icon">👕</div><div class="empty-text">Inga spelare ännu</div></div>'
+    : squad.map((p,i)=>playerRowHTML(p, maxM, allCnt[i])).join('');
+  const loansHTML = loans.length===0
+    ? '<div class="empty-state"><div class="empty-icon">🔄</div><div class="empty-text">Inga inlånade spelare</div></div>'
+    : loans.map((p,i)=>playerRowHTML(p, maxM, allCnt[squad.length+i])).join('');
+  const coachHTML = coaches.length===0
+    ? '<div class="empty-state"><div class="empty-icon">🧢</div><div class="empty-text">Inga tränare</div></div>'
+    : coaches.map((c,i)=>coachRowHTML(c, maxC, coachCnt[i])).join('');
+
+  document.getElementById('squadList').innerHTML = squadHTML;
+  document.getElementById('loanList').innerHTML = loansHTML;
+  document.getElementById('coachesList').innerHTML = coachHTML;
+}
+
+function playerRowHTML(p, maxM, cnt) {
+  const isLoan = p.type==='loan';
+  cnt = cnt||0;
+  const loadColor = maxM>0 ? (cnt/maxM<0.5?'var(--green-light)':cnt/maxM<0.75?'#f0a500':'var(--danger)') : 'var(--green-light)';
+  const levels = (p.levelIds||[]).map(id=>levelBadgeHTML(id)).join('');
+  return `<div class="player-row" onclick="openPlayerProfile(${p.id})">
+    <div class="jersey ${isLoan?'loan':''}">${p.jersey}</div>
+    <div class="player-info">
+      <div class="player-name">${p.first} ${p.last}</div>
+      <div class="player-meta">
+        ${posBadgesHTML(p.pos)}
+        ${isLoan?'<span class="badge badge-loan">Inlånad</span>':''}
+        ${levels}
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${loadColor};line-height:1;">${cnt}</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">matcher</div>
+    </div>
+    <button class="icon-btn" onclick="event.stopPropagation();removePlayer(${p.id})">✕</button>
+  </div>`;
+}
+
+function coachRowHTML(c, maxM, cnt) {
+  cnt = cnt||0;
+  return `<div class="player-row">
+    <div style="width:32px;height:32px;background:rgba(56,189,248,0.15);border:1.5px solid var(--coach);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">🧢</div>
+    <div class="player-info">
+      <div class="player-name">${c.first} ${c.last}</div>
+      <div class="player-meta"><span class="badge badge-coach">${c.role}</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--coach);line-height:1;">${cnt}</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">matcher</div>
+    </div>
+    <button class="icon-btn" onclick="removeCoach(${c.id})">✕</button>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// PLAYER PROFILE
+// ═══════════════════════════════════════════════════════
+function editPlayerLevels() {
+  const t = getTeam();
+  const p = (t.players||[]).find(x=>x.id===profilePlayerId);
+  if (!p) return;
+  const ed = document.getElementById('profileLevelEditor');
+  if (!ed) return;
+  ed.style.display = ed.style.display==='none' ? 'block' : 'none';
+  if (ed.style.display==='block') {
+    populateLevelCheckboxes('profileLevelCheckboxes', p.levelIds||[]);
+  }
+}
+
+function savePlayerLevels() {
+  const t = getTeam();
+  const p = (t.players||[]).find(x=>x.id===profilePlayerId);
+  if (!p) return;
+  p.levelIds = getCheckedLevels('profileLevelCheckboxes');
+  save();
+  // Refresh badge display
+  const profileLvls = document.getElementById('profileLevels');
+  if (profileLvls) profileLvls.innerHTML = p.levelIds.length>0 ? p.levelIds.map(id=>levelBadgeHTML(id)).join(' ') : '<span style="font-size:12px;color:var(--muted);">Inga nivåer tilldelade</span>';
+  document.getElementById('profileLevelEditor').style.display = 'none';
+  renderPlayers();
+  showToast('Nivåer sparade');
+}
+
+let profilePlayerId = null;
+let lineupLevelFilter = null;  // null=all, or a levelId string
+let lineupAvailFilter = false; // true=only show available
+
+function openPlayerProfile(pid) {
+  const t = getTeam();
+  const p = (t.players||[]).find(x=>x.id===pid);
+  if (!p) return;
+  profilePlayerId = pid;
+  const season = getActiveSeason();
+  document.getElementById('profileJersey').textContent = p.jersey;
+  document.getElementById('profileJersey').className = `jersey${p.type==='loan'?' loan':''}`;
+  document.getElementById('profileName').textContent = `${p.first} ${p.last}`;
+  document.getElementById('profileMeta').innerHTML = posBadgesHTML(p.pos)+(p.type==='loan'?' <span class="badge badge-loan">Inlånad</span>':'');
+  // Show level badges
+  const profileLvls = document.getElementById('profileLevels');
+  if (profileLvls) profileLvls.innerHTML = (p.levelIds||[]).length>0 ? (p.levelIds||[]).map(id=>levelBadgeHTML(id)).join(' ') : '<span style="font-size:12px;color:var(--muted);">Inga nivåer tilldelade</span>';
+  // Reset editor
+  const ed = document.getElementById('profileLevelEditor'); if(ed) ed.style.display='none';
+  const allM = (t.matches||[]).filter(m=>(m.lineup||[]).includes(pid));
+  const seasonM = season ? allM.filter(m=>m.seasonId===season) : allM;
+  document.getElementById('profileTotal').textContent = allM.length;
+  document.getElementById('profileSeason').textContent = seasonM.length;
+  const display = season ? seasonM : allM;
+  const sorted = [...display].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('profileMatchList').innerHTML = sorted.length===0
+    ? '<div class="empty-state" style="padding:16px 0;"><div class="empty-icon" style="font-size:24px;">📅</div><div class="empty-text">Inga matcher</div></div>'
+    : sorted.map(m=>{const d=new Date(m.date);return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div class="match-date-badge"><div class="match-day">${d.getDate()}</div><div class="match-mon">${d.toLocaleString('sv-SE',{month:'short'})}</div></div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:600;">${m.opp}</div><div style="margin-top:2px;">${levelBadgeHTML(m.levelId)}</div></div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--green-light);">${m.result||'–'}</div>
+      </div>`;}).join('');
+  openSheet('playerProfileSheet');
+}
+
+// ═══════════════════════════════════════════════════════
+// LINEUP / UTTAGNING
+// ═══════════════════════════════════════════════════════
+function populateMatchDropdown() {
+  const t = getTeam();
+  const dd = document.getElementById('matchDropdown');
+  if (!dd) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const fmtCount = t.format || 11;
+  const sorted = [...(t.matches||[])].map((m,i)=>({m,i})).sort((a,b)=>new Date(b.m.date)-new Date(a.m.date));
+
+  dd.innerHTML = '<option value="">– Välj en match –</option>' +
+    sorted.map(({m,i})=>{
+      const d = new Date(m.date);
+      const isPast = d < today;
+      const lv = getLevelById(m.levelId);
+      const lc = (m.lineup||[]).length;
+      const lineupMark = lc>=fmtCount ? ' ✓' : lc>0 ? ` (${lc}/${fmtCount})` : '';
+      return `<option value="${i}" ${isPast?'style="color:var(--muted)"':''}>${d.toLocaleDateString('sv-SE',{day:'numeric',month:'short'})} – ${m.opp}${lv?' ('+lv.name+')':''}${lineupMark}</option>`;
+    }).join('');
+
+  // Restore previously selected match, but never auto-select on fresh page load
+  if (selectedMatchIdx>=0 && (t.matches||[])[selectedMatchIdx]) {
+    dd.value = selectedMatchIdx;
+    showMatchInfoBar(selectedMatchIdx);
+    renderSavedLineups();
+  } else {
+    selectedMatchIdx = -1;
+    hideMatchUI();
+    renderSavedLineups();
+  }
+}
+
+function renderSavedLineups() {
+  const t = getTeam();
+  const fmtCount = t.format || 11;
+  const el = document.getElementById('savedLineupsBar');
+  if (!el) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const withLineup = (t.matches||[])
+    .map((m,i)=>({m,i}))
+    .filter(({m})=>(m.lineup||[]).length > 0)
+    .sort((a,b)=>new Date(b.m.date)-new Date(a.m.date))
+    .slice(0, 8);
+  if (withLineup.length===0) { el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = withLineup.map(({m,i})=>{
+    const d = new Date(m.date);
+    const lc = (m.lineup||[]).length;
+    const isComplete = lc >= fmtCount;
+    const lv = getLevelById(m.levelId);
+    const isSelected = i === selectedMatchIdx;
+    return `<div onclick="selectMatch(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;margin-bottom:6px;">
+      <div style="min-width:38px;text-align:center;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
+        <div style="font-size:10px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
+        <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:${isComplete?'rgba(61,186,116,0.15)':'rgba(245,197,24,0.12)'};color:${isComplete?'#3dba74':'#f5c518'};">${isComplete?'✓ Klar':lc+'/'+fmtCount}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectMatch(val) {
+  const idx = parseInt(val);
+  if (isNaN(idx)||idx<0) { selectedMatchIdx=-1; hideMatchUI(); return; }
+  selectedMatchIdx = idx;
+  lineupLevelFilter = null;
+  lineupAvailFilter = false;
+  showMatchInfoBar(idx);
+  renderLineup();
+}
+
+function showMatchInfoBar(idx) {
+  const t = getTeam();
+  const m = (t.matches||[])[idx];
+  if (!m) return;
+  const d = new Date(m.date);
+  document.getElementById('lineupMatchOpp').textContent = m.opp;
+  document.getElementById('lineupMatchMeta').textContent = d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('lineupLevelBadge').innerHTML = levelBadgeHTML(m.levelId);
+  document.getElementById('matchVenue').value = m.venue||'';
+  document.getElementById('matchTime').value = m.gather||m.time||'09:30';
+  document.getElementById('matchInfoDisplay').style.display = 'block';
+  document.getElementById('matchInfoEmpty').style.display = 'none';
+  document.getElementById('importCard').style.display = 'block';
+  document.getElementById('playerSelCard').style.display = 'block';
+}
+
+function hideMatchUI() {
+  document.getElementById('matchInfoDisplay').style.display = 'none';
+  document.getElementById('matchInfoEmpty').style.display = 'block';
+  document.getElementById('importCard').style.display = 'none';
+  document.getElementById('playerSelCard').style.display = 'none';
+}
+
+function renderLineup() {
+  const t = getTeam();
+  const m = selectedMatchIdx>=0 ? (t.matches||[])[selectedMatchIdx] : null;
+  if (!m) { document.getElementById('fieldRows').innerHTML=''; renderLineupPlayerList([],{},t.format||11); renderLineupCoachList([]); return; }
+  if (!m.lineup) m.lineup=[];
+  if (!m.coaches) m.coaches=[];
+  const sel = m.lineup;
+  const selCoaches = m.coaches;
+  const fmtCount = t.format||11;
+  const formation = t.formation||'4-3-3';
+  const rows = FORMATION_ROWS[formation]||FORMATION_ROWS['4-3-3'];
+  const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
+
+  renderLineupPlayerList(sel, playerMap, fmtCount, m);
+  renderLineupCoachList(selCoaches);
+}
+
+// ── Filter bar ──────────────────────────────────────────────────────────────
+function renderLineupFilterBar(m) {
+  const bar = document.getElementById('lineupFilterBar');
+  if (!bar) return;
+  const levels = getLevels();
+  const hasAvail = m && (m.availableIds||[]).length > 0;
+  let html = '';
+
+  // Availability filter button
+  if (hasAvail) {
+    html += `<button onclick="setAvailFilter()" style="padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;border:1.5px solid ${lineupAvailFilter?'var(--green-light)':'var(--border)'};background:${lineupAvailFilter?'rgba(61,186,116,0.15)':'transparent'};color:${lineupAvailFilter?'var(--green-light)':'var(--muted)'};">✅ Bara tillgängliga</button>`;
+  }
+
+  // Level filter buttons
+  levels.forEach(lv => {
+    const c = getLevelColor(lv.id);
+    const active = lineupLevelFilter === lv.id;
+    html += `<button onclick="setLevelFilter('${lv.id}')" style="padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};">${lv.name}</button>`;
+  });
+
+  bar.innerHTML = html;
+}
+
+function setAvailFilter() {
+  lineupAvailFilter = !lineupAvailFilter;
+  renderLineup();
+}
+
+function setLevelFilter(lvId) {
+  lineupLevelFilter = lineupLevelFilter === lvId ? null : lvId;
+  renderLineup();
+}
+
+function setLineupFilter(val) {
+  // removed
+}
+
+// ── Player list ──────────────────────────────────────────────────────────────
+function renderLineupPlayerList(sel, playerMap, fmtCount, m) {
+  const t = getTeam();
+  const el = document.getElementById('lineupPlayerList');
+  if (!el) return;
+
+  renderLineupFilterBar(m);
+
+  const availIds = m?.availableIds || null;
+  const hasAvail = availIds !== null && availIds.length > 0;
+
+  // Start with full squad/loans
+  let squad = (t.players||[]).filter(p=>p.type==='squad').sort((a,b)=>a.jersey-b.jersey);
+  let loans  = (t.players||[]).filter(p=>p.type==='loan');
+
+  // Apply level filter
+  if (lineupLevelFilter) {
+    squad = squad.filter(p=>(p.levelIds||[]).includes(lineupLevelFilter));
+    loans  = loans.filter(p=>(p.levelIds||[]).includes(lineupLevelFilter));
+  }
+
+  // Apply availability filter
+  const filterByAvail = hasAvail && lineupAvailFilter;
+
+  // Build cross info for everyone (before filtering, so we have it for display)
+  const allWithInfo = [...squad,...loans].map(p=>({
+    p,
+    info: buildCrossInfo(p.id, m),
+    available: !hasAvail || availIds.includes(p.id)
+  }));
+
+  // Sort: conflicts first, then by season matches
+  const squadWithInfo = allWithInfo.filter(x=>x.p.type==='squad').sort((a,b)=>{
+    if (a.info?.conflict&&!b.info?.conflict) return -1;
+    if (!a.info?.conflict&&b.info?.conflict) return 1;
+    return (a.info?.seasonMatches||0)-(b.info?.seasonMatches||0);
+  });
+  const loansWithInfo = allWithInfo.filter(x=>x.p.type==='loan');
+
+  // Filter out unavailable only if avail filter is on (but always show already-selected)
+  const squadFiltered = filterByAvail ? squadWithInfo.filter(x=>x.available||sel.includes(x.p.id)) : squadWithInfo;
+  const loansFiltered  = filterByAvail ? loansWithInfo.filter(x=>x.available||sel.includes(x.p.id))  : loansWithInfo;
+
+  const conflicts  = allWithInfo.filter(x=>x.info?.conflict).length;
+  const alreadyOut = allWithInfo.filter(x=>x.info?.alreadyOut).length;
+  const unavailCount = hasAvail ? allWithInfo.filter(x=>!x.available).length : 0;
+
+  let html = `<div class="psel-count">${sel.length}/${fmtCount} valda`;
+  if (hasAvail) html += ` · <span style="color:var(--green-light);">✅ ${availIds.length} tillg.</span>`;
+  if (unavailCount) html += ` · <span style="color:var(--muted);">❌ ${unavailCount} ej tillg.</span>`;
+  if (conflicts)   html += ` · <span style="color:var(--danger);">⚠️ ${conflicts} krock</span>`;
+  if (alreadyOut)  html += ` · <span style="color:#f0a500;">📋 ${alreadyOut} uttagen</span>`;
+  html += '</div>';
+
+  if (squadFiltered.length > 0) {
+    html += `<div class="psel-divider">Trupp <span style="font-size:10px;font-weight:400;">↑ minst spelade</span></div>`;
+    html += squadFiltered.map(({p,info,available})=>pselItem(p,sel,false,info,hasAvail,available)).join('');
+  } else {
+    html += `<div style="font-size:13px;color:var(--muted);padding:10px 0;text-align:center;">Inga spelare matchar filtret</div>`;
+  }
+  if (loansFiltered.length > 0) {
+    html += `<div class="psel-divider" style="color:var(--loan);">Inlånade</div>`;
+    html += loansFiltered.map(({p,info,available})=>pselItem(p,sel,true,info,hasAvail,available)).join('');
+  }
+  html += `<div style="display:flex;gap:8px;margin-top:10px;">
+    <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="quickAddFromLineup('squad')">+ Spelare</button>
+    <button class="btn btn-sm" style="flex:1;background:rgba(167,139,250,0.15);color:var(--loan);border:1px solid rgba(167,139,250,0.3);" onclick="quickAddFromLineup('loan')">+ Inlånad</button>
+  </div>`;
+  el.innerHTML = html;
+}
+
+function pselItem(p, sel, isLoan, crossInfo, hasAvail, available) {
+  const checked = sel.includes(p.id);
+  const conflict = crossInfo?.conflict;
+  const alreadyOut = crossInfo?.alreadyOut;
+  const sM = crossInfo?.seasonMatches??0;
+  const sL = crossInfo?.seasonLoad??0;
+  const loadColor = sL<50?'var(--green-light)':sL<75?'#f0a500':'var(--danger)';
+  const isUnavail = hasAvail && available === false;
+
+  let tag='';
+  const tooltipDetails = crossInfo?.conflictDetails?.length ? crossInfo.conflictDetails.join(', ') : crossInfo?.alreadyOutDetails?.join(', ') || '';
+  const tooltipHTML = tooltipDetails ? `<div class="tooltip">${tooltipDetails}</div>` : '';
+  if (conflict) tag=`<span class="has-tooltip" style="font-size:10px;background:rgba(231,76,60,0.18);color:var(--danger);border-radius:4px;padding:1px 5px;font-weight:700;position:relative;">⚠️ Krock${tooltipHTML}</span>`;
+  else if (alreadyOut && crossInfo?.alreadyOutSoon) tag=`<span class="has-tooltip" style="font-size:10px;background:rgba(240,165,0,0.15);color:#f0a500;border-radius:4px;padding:1px 5px;font-weight:700;position:relative;">📋 Snart uttagen${tooltipHTML}</span>`;
+  else if (alreadyOut) tag=`<span class="has-tooltip" style="font-size:10px;background:rgba(61,186,116,0.15);color:#3dba74;border-radius:4px;padding:1px 5px;font-weight:700;position:relative;">📋 Uttagen${tooltipHTML}</span>`;
+
+  // Availability dot
+  const availDot = hasAvail
+    ? `<span style="font-size:12px;margin-right:2px;" title="${available?'Tillgänglig':'Ej tillgänglig'}">${available?'✅':'❌'}</span>`
+    : '';
+
+  return `<div class="psel-item ${isLoan?'loan-item':''} ${checked?'selected':''} ${conflict?'conflict':''}" style="${isUnavail?'opacity:0.5;':''}" onclick="toggleLineupPlayer(${p.id})">
+    <div class="check-circle">${checked?'✓':''}</div>
+    <div class="jersey ${isLoan?'loan':''}" style="width:26px;height:26px;font-size:13px;">${p.jersey}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">${availDot}<span style="font-size:13px;font-weight:600;">${p.first} ${p.last}</span>${tag}</div>
+      <div style="display:flex;align-items:center;gap:5px;margin-top:3px;">
+        <div style="width:40px;height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;"><div style="width:${sL}%;height:100%;background:${loadColor};border-radius:2px;"></div></div>
+        <span style="font-size:11px;color:var(--muted);">${sM} mat</span>
+        ${(p.levelIds||[]).map(id=>levelBadgeHTML(id)).join('')}
+        ${crossInfo?.teamName?`<span style="font-size:10px;color:var(--muted);">${crossInfo.teamName}</span>`:''}
+      </div>
+    </div>
+    <div style="flex-shrink:0;display:flex;flex-direction:column;gap:2px;align-items:flex-end;">${posShortHTML(p.pos)}</div>
+  </div>`;
+}
+
+function renderLineupCoachList(selCoaches) {
+  const t = getTeam();
+  const el = document.getElementById('lineupCoachList');
+  if (!el) return;
+  const coaches = t.coaches||[];
+  if (coaches.length===0) { el.innerHTML='<div class="empty-state" style="padding:16px 0;"><div class="empty-icon" style="font-size:24px;">🧢</div><div class="empty-text">Lägg till tränare under Spelare</div></div>'; return; }
+  el.innerHTML = `<div class="psel-count">${selCoaches.length} valda</div>` +
+    coaches.map(c=>{const sel2=selCoaches.includes(c.id);return `<div class="psel-item coach-item ${sel2?'selected':''}" onclick="toggleLineupCoach(${c.id})">
+      <div class="check-circle">${sel2?'✓':''}</div>
+      <div style="font-size:18px;">🧢</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:600;">${c.first} ${c.last}</div><div style="font-size:11px;color:var(--muted);">${c.role}</div></div>
+    </div>`;}).join('');
+}
+
+function buildCrossInfo(pid, currentMatch) {
+  const t = getTeam();
+  const thisPlayer = (t.players||[]).find(p=>p.id===pid);
+  if (!thisPlayer) return null;
+  const matchDateStr = currentMatch?.date||'';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const thisName = norm(thisPlayer.first+' '+thisPlayer.last);
+  let seasonMatches=0, alreadyOut=false, alreadyOutSoon=false, conflict=false, conflictTeamName='', outTeamName='';
+  let conflictDetails=[], alreadyOutDetails=[];
+
+  Object.entries(teams).forEach(([tid,team])=>{
+    const match = (team.players||[]).find(p=>norm(p.first+' '+p.last)===thisName);
+    if (!match) return;
+    const season = getActiveSeason();
+    (team.matches||[]).forEach((m,idx)=>{
+      if (tid===currentTeam && idx===selectedMatchIdx) return; // skip current match
+      if (!(m.lineup||[]).includes(match.id)) return;
+      if (season && m.seasonId!==season) return;
+      seasonMatches++;
+      const mDate = new Date(m.date+'T00:00:00');
+      if (mDate<today) return;
+      alreadyOut=true; outTeamName=outTeamName||team.name;
+      const d2 = new Date(m.date+'T00:00:00');
+      const d2str = d2.toLocaleDateString('sv-SE',{day:'numeric',month:'short'});
+      if (matchDateStr) {
+        const diffDays = Math.abs((d2 - new Date(matchDateStr+'T00:00:00')) / 86400000);
+        if (diffDays <= 1) {
+          alreadyOutSoon = true;
+          alreadyOutDetails.push(`${d2str} ${m.opp}${team.name!==getTeam().name?' ('+team.name+')':''}`);
+        } else {
+          alreadyOutDetails.push(`${d2str} ${m.opp}${team.name!==getTeam().name?' ('+team.name+')':''}`);
+        }
+        if (m.date===matchDateStr) {
+          conflict=true; conflictTeamName=team.name;
+          conflictDetails.push(`${d2str} ${m.opp}${team.name!==getTeam().name?' ('+team.name+')':''}`);
+        }
+      } else {
+        alreadyOutDetails.push(`${d2str} ${m.opp}${team.name!==getTeam().name?' ('+team.name+')':''}`);
+      }
+    });
+  });
+
+  let maxMatches=1;
+  Object.values(teams).forEach(team=>(team.players||[]).forEach(p=>{ const c=countMatchesForPlayer(p.id,undefined,getActiveSeason()); if(c>maxMatches) maxMatches=c; }));
+  return { conflict, alreadyOut:alreadyOut&&!conflict, alreadyOutSoon, teamName:conflict?conflictTeamName:(alreadyOut?outTeamName:null), conflictDetails, alreadyOutDetails, seasonMatches, seasonLoad:Math.min(100,Math.round(seasonMatches/maxMatches*100)) };
+}
+
+function toggleLineupPlayer(id) {
+  const t = getTeam();
+  const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+  if (!m) { showToast('Välj en match först'); return; }
+  if (!m.lineup) m.lineup=[];
+  const idx = m.lineup.indexOf(id);
+  const fmtCount = t.format||11;
+  if (idx>-1) { m.lineup.splice(idx,1); }
+  else if (m.lineup.length<fmtCount) {
+    const info = buildCrossInfo(id,m);
+    if (info?.conflict) showToast(`⚠️ Krock – ${info.teamName} samma dag!`);
+    else if (info?.alreadyOut) showToast(`📋 Uttagen för ${info.teamName}`);
+    m.lineup.push(id);
+  } else { showToast(`Max ${fmtCount} spelare!`); return; }
+  save(); renderLineup();
+}
+
+function toggleLineupCoach(id) {
+  const t = getTeam();
+  const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+  if (!m) return;
+  if (!m.coaches) m.coaches=[];
+  const idx = m.coaches.indexOf(id);
+  if (idx>-1) m.coaches.splice(idx,1); else m.coaches.push(id);
+  save(); renderLineup();
+}
+
+function saveLineup() {
+  const t = getTeam();
+  const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+  if (!m) { showToast('Välj en match först'); return; }
+  m.venue = document.getElementById('matchVenue').value.trim();
+  m.time  = document.getElementById('matchTime').value;
+  const season = getActiveSeason();
+  if (season && !m.seasonId) m.seasonId = season;
+  save();
+  const btn = document.getElementById('saveLineupBtn');
+  if (btn) { const orig=btn.innerHTML; btn.innerHTML='✅ Sparad!'; btn.style.background='var(--green-light)'; setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2500); }
+  renderSavedLineups();
+  populateMatchDropdown();
+  showToast(`✅ Uttagning sparad mot ${m.opp}`);
+}
+
+function quickAddFromLineup(type) {
+  addingType=type; window._fromLineup=true; setupAddSheet(); openSheet('addPlayerSheet');
+}
+
+// ═══════════════════════════════════════════════════════
+// WHATSAPP
+// ═══════════════════════════════════════════════════════
+function openWhatsApp() {
+  const t = getTeam();
+  const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+  if (!m) { showToast('Välj en match först'); return; }
+  const venue = document.getElementById('matchVenue').value.trim()||m.venue||'Hemmaplan';
+  const time  = document.getElementById('matchTime').value||m.time||'09:30';
+  const playerMap={}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
+  const coachMap={};  (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
+  const sel = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
+  const coaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
+  const loans = sel.filter(p=>p.type==='loan');
+  const lv = getLevelById(m.levelId);
+  const d = new Date(m.date);
+  let text = `⚽ KALLELSE – ${t.name.toUpperCase()}\n\n`;
+  text += `🏟 ${m.opp}\n📅 ${d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'})}\n`;
+  text += `📍 ${venue}${m.homeAway?' ('+( m.homeAway==='hemma'?'Hemma':'Borta')+')':''}\n⏰ Samling kl. ${time}\n`;
+  if (m.kickoff) text += `⚽ Avspark: ${m.kickoff}${m.duration?' ('+m.duration+' min)':''}\n`;
+  if (lv) text += `🎮 Nivå: ${lv.name}\n`;
+  text += `\nSTARTUPPSTÄLLNING:\n${sel.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
+  if (coaches.length) text+=`\n🧢 Tränare:\n${coaches.map(c=>`  ${c.first} ${c.last} (${c.role})`).join('\n')}\n`;
+  if (loans.length) text+=`\n🔄 Inlånade:\n${loans.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
+  text+=`\n– Lagledningen`;
+  document.getElementById('waBubble').textContent=text;
+  openSheet('waSheet');
+}
+function sendWA() { window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('waBubble').textContent),'_blank'); }
+function copyWA() { navigator.clipboard.writeText(document.getElementById('waBubble').textContent); showToast('📋 Kopierat!'); }
+
+// ═══════════════════════════════════════════════════════
+// MATCHES PAGE
+// ═══════════════════════════════════════════════════════
+function populateNewMatchLevel() {
+  const levels = getLevels();
+  const sel = document.getElementById('newMatchLevel');
+  if (!sel) return;
+  if (levels.length===0) { sel.innerHTML='<option value="">Inga nivåer – lägg till i Inställningar</option>'; return; }
+  sel.innerHTML = levels.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+}
+
+function addMatch() {
+  const opp = document.getElementById('newMatchOpp').value.trim();
+  const date = document.getElementById('newMatchDate').value;
+  const levelId = document.getElementById('newMatchLevel').value;
+  const result = document.getElementById('newMatchResult').value.trim();
+  if (!opp||!date) { showToast('Ange motståndare och datum'); return; }
+  const t = getTeam();
+  const kickoff  = document.getElementById('newMatchKickoff').value;
+  const duration = parseInt(document.getElementById('newMatchDuration').value)||60;
+  const gather   = document.getElementById('newMatchGather').value;
+  const venue    = document.getElementById('newMatchVenue').value.trim();
+  const homeAway = getHomeAway();
+  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
+  save();
+  ['newMatchOpp','newMatchResult','newMatchVenue'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('input[name="newMatchHB"]').forEach(r=>r.checked=false);
+  const hh=document.getElementById('hbHome'),ha=document.getElementById('hbAway');
+  if(hh){hh.style.borderColor='var(--border)';hh.style.background='transparent';hh.style.color='var(--muted)';}
+  if(ha){ha.style.borderColor='var(--border)';ha.style.background='transparent';ha.style.color='var(--muted)';}
+  renderMatchColumns();
+  populateMatchDropdown();
+  showToast(`✅ Match mot ${opp} tillagd`);
+}
+
+// Get ISO week number
+function getWeekNumber(d) {
+  const date = new Date(d);
+  date.setHours(0,0,0,0);
+  date.setDate(date.getDate() + 3 - (date.getDay()+6)%7);
+  const week1 = new Date(date.getFullYear(),0,4);
+  return 1 + Math.round(((date.getTime()-week1.getTime())/86400000 - 3 + (week1.getDay()+6)%7)/7);
+}
+
+function getWeekKey(dateStr) {
+  const d = new Date(dateStr);
+  const year = d.getFullYear();
+  return `${year}-W${String(getWeekNumber(d)).padStart(2,'0')}`;
+}
+
+function getWeekLabel(dateStr) {
+  const d = new Date(dateStr);
+  return `Vecka ${getWeekNumber(d)}`;
+}
+
+function renderMatchColumns() {
+  const t = getTeam();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const container = document.getElementById('matchColumns');
+  container.style.display = 'block';
+  container.style.gridTemplateColumns = '';
+
+  const allMatches = (t.matches||[]).map((m,i)=>({m,i}));
+  if (allMatches.length===0) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Inga matcher ännu</div></div>';
+    return;
+  }
+
+  const upcoming = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')>=today).sort((a,b)=>new Date(a.m.date)-new Date(b.m.date));
+  const past     = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')<today).sort((a,b)=>new Date(b.m.date)-new Date(a.m.date));
+
+  let html = '';
+
+  if (upcoming.length > 0) {
+    html += `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;padding:4px 0 8px;">Kommande</div>`;
+    html += renderWeekGroups(upcoming, today, false);
+  }
+  if (past.length > 0) {
+    html += `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;padding:12px 0 8px;">Spelade</div>`;
+    html += renderWeekGroups(past, today, true);
+  }
+
+  container.innerHTML = html;
+}
+
+function renderWeekGroups(matches, today, isPast) {
+  // Group by week key
+  const weeks = {};
+  matches.forEach(({m,i}) => {
+    const wk = getWeekKey(m.date);
+    if (!weeks[wk]) weeks[wk] = [];
+    weeks[wk].push({m,i});
+  });
+
+  return Object.entries(weeks).map(([wk, items]) => {
+    const firstDate = items[0].m.date;
+    const d = new Date(firstDate);
+    // Get Monday of that week
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - (d.getDay()+6)%7);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+    const dateRange = `${monday.getDate()} ${monday.toLocaleString('sv-SE',{month:'short'})} – ${sunday.getDate()} ${sunday.toLocaleString('sv-SE',{month:'short'})}`;
+
+    const cards = items.map(({m,i}) => matchCardHTML(m, i, isPast)).join('');
+    return `<div style="margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <span style="font-size:12px;font-weight:600;color:var(--muted);">${getWeekLabel(firstDate)}</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="font-size:11px;color:var(--muted);">${dateRange}</span>
+      </div>
+      ${cards}
+    </div>`;
+  }).join('');
+}
+
+function matchCardHTML(m, i, isPast) {
+  const t = getTeam();
+  const fmtCount = t.format || 11;
+  const lineupCount = (m.lineup||[]).length;
+  const isComplete = lineupCount >= fmtCount;
+  const hasLineup = lineupCount > 0;
+
+  let lineupTag = '';
+  if (isComplete) lineupTag = '<span style="font-size:10px;background:rgba(61,186,116,0.2);color:#3dba74;border-radius:4px;padding:1px 5px;font-weight:700;">✓ Klar</span>';
+  else if (hasLineup) lineupTag = `<span style="font-size:10px;background:rgba(245,197,24,0.15);color:#f5c518;border-radius:4px;padding:1px 5px;font-weight:700;">${lineupCount}/${fmtCount}</span>`;
+
+  const hbLabel = m.homeAway==='hemma' ? 'Hemma' : m.homeAway==='borta' ? 'Borta' : '';
+  const metaParts = [
+    m.kickoff ? `⚽ ${m.kickoff}` : '',
+    m.gather  ? `⏰ ${m.gather}` : '',
+    hbLabel,
+    m.venue || ''
+  ].filter(Boolean).join(' · ');
+
+  const d = new Date(m.date);
+  const dayStr = d.toLocaleDateString('sv-SE',{weekday:'short',day:'numeric',month:'short'});
+
+  return `<div class="match-card ${isPast?'past':''}" onclick="openMatchDetail(${i})" style="flex-direction:column;align-items:stretch;gap:6px;padding:10px 12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+        <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</span>
+        ${levelBadgeHTML(m.levelId)}
+        ${lineupTag}
+      </div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);flex-shrink:0;">${m.result||'–'}</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);">${dayStr}${metaParts?' · '+metaParts:''}</div>
+  </div>`;
+}
+
+function openMatchDetail(idx) {
+  const t = getTeam();
+  const m = (t.matches||[])[idx];
+  if (!m) return;
+  detailMatchIdx = idx;
+  const d = new Date(m.date);
+  document.getElementById('mdOpp').textContent = m.opp;
+  document.getElementById('mdMeta').textContent = d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
+  document.getElementById('mdLevel').innerHTML = levelBadgeHTML(m.levelId);
+  document.getElementById('mdResult').value = m.result||'';
+  document.getElementById('mdVenue').value = m.venue||'';
+  document.getElementById('mdKickoff').value = m.kickoff||'';
+  document.getElementById('mdGather').value = m.gather||m.time||'';
+  document.getElementById('mdHomeAway').value = m.homeAway||'';
+  // Parse goals from result string
+  const rMatch = (m.result||'').match(/^(\d+)[^\d]+(\d+)$/);
+  document.getElementById('mdGoalsFor').value = rMatch?rMatch[1]:'';
+  document.getElementById('mdGoalsAgainst').value = rMatch?rMatch[2]:'';
+
+  // Lineup list
+  const playerMap={}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
+  const coachMap={};  (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
+  const lineup = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
+  const coaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
+  let html='';
+  if (lineup.length>0) html+=lineup.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+    <div class="jersey ${p.type==='loan'?'loan':''}" style="width:26px;height:26px;font-size:12px;">${p.jersey}</div>
+    <div style="flex:1;font-size:13px;font-weight:600;">${p.first} ${p.last}</div>
+    <div style="flex-shrink:0;display:flex;flex-direction:column;gap:2px;align-items:flex-end;">${posShortHTML(p.pos)}</div>
+  </div>`).join('');
+  if (coaches.length>0) html+=`<div class="psel-divider" style="margin-top:8px;">Tränare</div>`+coaches.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);"><span style="font-size:16px;">🧢</span><div style="flex:1;font-size:13px;">${c.first} ${c.last}</div><span style="font-size:12px;color:var(--muted);">${c.role}</span></div>`).join('');
+  if (!html) html='<div style="font-size:13px;color:var(--muted);padding:8px 0;">Ingen uttagning ännu — gå till Uttagning</div>';
+  document.getElementById('mdLineup').innerHTML=html;
+  openSheet('matchDetailSheet');
+}
+
+function saveMatchDetail() {
+  const t = getTeam();
+  const m = (t.matches||[])[detailMatchIdx];
+  if (!m) return;
+  const gf = document.getElementById('mdGoalsFor').value;
+  const ga = document.getElementById('mdGoalsAgainst').value;
+  const manualResult = document.getElementById('mdResult').value.trim();
+  m.result   = (gf!==''&&ga!=='')?`${gf}–${ga}`:manualResult;
+  m.venue    = document.getElementById('mdVenue').value.trim();
+  m.kickoff  = document.getElementById('mdKickoff').value;
+  m.gather   = document.getElementById('mdGather').value;
+  m.homeAway = document.getElementById('mdHomeAway').value;
+  save(); closeSheet('matchDetailSheet'); renderMatchColumns();
+  showToast('Match uppdaterad');
+}
+
+function removeMatchFromDetail() {
+  const t = getTeam();
+  const m = (t.matches||[])[detailMatchIdx];
+  if (!m||!confirm(`Ta bort match mot ${m.opp}?`)) return;
+  if (selectedMatchIdx===detailMatchIdx) selectedMatchIdx=-1;
+  else if (selectedMatchIdx>detailMatchIdx) selectedMatchIdx--;
+  t.matches.splice(detailMatchIdx,1);
+  save(); closeSheet('matchDetailSheet'); renderMatchColumns(); populateMatchDropdown();
+  showToast('Match borttagen');
+}
+
+// ═══════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════
+function renderSettings() {
+  const t = getTeam();
+  renderLevelsList();
+  renderSeasonsList();
+  renderTeamList();
+  // Formation
+  const fs = document.getElementById('formatSelect');
+  if (fs) fs.value = t.format||11;
+  populateFormationSelect();
+}
+
+function renderLevelsList() {
+  const t = getTeam();
+  const levels = t.levels||[];
+  const el = document.getElementById('levelsList');
+  if (!el) return;
+  if (levels.length===0) { el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0;">Inga nivåer – lägg till nedan</div>'; return; }
+  el.innerHTML = levels.map((lv,i)=>{
+    const c=getLevelColor(lv.id);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <span class="lvl-badge" style="background:${c.bg};color:${c.color};">${lv.name}</span>
+      <div style="flex:1;font-size:12px;color:var(--muted);">${(t.matches||[]).filter(m=>m.levelId===lv.id).length} matcher</div>
+      <button class="icon-btn" onclick="removeLevel('${lv.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleHB(side) {
+  const homeL = document.getElementById('hbHome');
+  const awayL = document.getElementById('hbAway');
+  if (!homeL||!awayL) return;
+  if (side==='home') {
+    homeL.style.borderColor='var(--green-light)'; homeL.style.background='rgba(61,186,116,0.12)'; homeL.style.color='var(--green-light)';
+    awayL.style.borderColor='var(--border)'; awayL.style.background='transparent'; awayL.style.color='var(--muted)';
+  } else {
+    awayL.style.borderColor='var(--coach)'; awayL.style.background='rgba(56,189,248,0.12)'; awayL.style.color='var(--coach)';
+    homeL.style.borderColor='var(--border)'; homeL.style.background='transparent'; homeL.style.color='var(--muted)';
+  }
+}
+
+function getHomeAway() {
+  const radios = document.querySelectorAll('input[name="newMatchHB"]');
+  for (const r of radios) { if (r.checked) return r.value; }
+  return '';
+}
+
+function addLevel() {
+  const name = document.getElementById('newLevelName').value.trim();
+  if (!name) { showToast('Ange ett namn'); return; }
+  const t = getTeam();
+  if (!t.levels) t.levels=[];
+  t.levels.push({id:'lv'+Date.now(),name});
+  document.getElementById('newLevelName').value='';
+  save(); renderSettings(); populateNewMatchLevel();
+  showToast(`Nivå "${name}" tillagd`);
+}
+
+function removeLevel(id) {
+  const t = getTeam();
+  if (!confirm('Ta bort nivån? Matcher kopplade till den förlorar sin nivåkoppling.')) return;
+  t.levels = (t.levels||[]).filter(l=>l.id!==id);
+  (t.matches||[]).forEach(m=>{ if(m.levelId===id) m.levelId=''; });
+  save(); renderSettings(); populateNewMatchLevel(); renderMatchColumns();
+}
+
+function populateFormationSelect() {
+  const t = getTeam();
+  const sel = document.getElementById('formationSelect');
+  if (!sel) return;
+  const avail = FORMATIONS[t.format||11]||FORMATIONS[11];
+  sel.innerHTML = avail.map(f=>`<option value="${f}" ${t.formation===f?'selected':''}>${f}</option>`).join('');
+}
+
+function setFormat(n) {
+  const t = getTeam(); t.format=n;
+  const avail=FORMATIONS[n]; if(!avail.includes(t.formation)) t.formation=avail[0];
+  save(); renderSettings();
+}
+
+function setFormation(f) { getTeam().formation=f; save(); showToast(`Formation: ${f}`); }
+
+function renderSeasonsList() {
+  const t = getTeam();
+  const seasons = t.seasons||[];
+  const active = t.activeSeason;
+  const el = document.getElementById('seasonsList');
+  if (!el) return;
+  el.innerHTML = seasons.length===0
+    ? '<div style="font-size:13px;color:var(--muted);padding:6px 0;">Inga säsonger – alla matcher visas</div>'
+    : seasons.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+        <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${s.name}</div><div style="font-size:11px;color:var(--muted);">${(t.matches||[]).filter(m=>m.seasonId===s.id).length} matcher</div></div>
+        ${s.id===active?'<span style="font-size:11px;color:var(--accent);font-weight:700;">AKTIV</span>':`<button class="btn btn-ghost btn-sm" onclick="activateSeason('${s.id}')">Aktivera</button>`}
+        <button class="icon-btn" onclick="deleteSeason('${s.id}')">✕</button>
+      </div>`).join('');
+}
+
+function addSeason() {
+  const name = document.getElementById('newSeasonName').value.trim();
+  if (!name) { showToast('Ange ett namn'); return; }
+  const t = getTeam();
+  if (!t.seasons) t.seasons=[];
+  const id='s'+Date.now(); t.seasons.push({id,name}); t.activeSeason=id;
+  document.getElementById('newSeasonName').value='';
+  save(); renderSeasonsList(); showToast(`✅ Säsong "${name}" skapad och aktiverad`);
+}
+
+function activateSeason(id) { getTeam().activeSeason=id; save(); renderSeasonsList(); showToast('Säsong aktiverad'); }
+function deleteSeason(id) {
+  const t=getTeam();
+  if (!confirm('Ta bort säsongen?')) return;
+  t.seasons=(t.seasons||[]).filter(s=>s.id!==id);
+  if (t.activeSeason===id) t.activeSeason=t.seasons[0]?.id||null;
+  save(); renderSeasonsList();
+}
+
+function renderTeamList() {
+  const el = document.getElementById('teamListSettings');
+  if (!el) return;
+  el.innerHTML = Object.entries(teams).map(([id,tm])=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;">${tm.name}</div>
+        <div style="font-size:12px;color:var(--muted);">${tm.format||11}-manna · ${(tm.levels||[]).map(l=>l.name).join(', ')||'Inga nivåer'}</div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0;">
+        ${id===currentTeam?'<span style="font-size:11px;color:var(--accent);font-weight:700;">AKTIVT</span>':`<button class="btn btn-ghost btn-sm" onclick="switchTeam('${id}')">Byt</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="openEditTeam('${id}')">✏️</button>
+        <button class="icon-btn" onclick="deleteTeam('${id}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function openEditTeam(id) {
+  const tm=teams[id]; if(!tm) return;
+  document.getElementById('editTeamId').value=id;
+  document.getElementById('editTeamName').value=tm.name;
+  document.getElementById('editTeamFormat').value=tm.format||11;
+  openSheet('editTeamSheet');
+}
+
+function saveEditTeam() {
+  const id=document.getElementById('editTeamId').value;
+  const name=document.getElementById('editTeamName').value.trim();
+  const format=parseInt(document.getElementById('editTeamFormat').value);
+  if (!name) { showToast('Ange ett lagnamn'); return; }
+  const tm=teams[id]; if(!tm) return;
+  tm.name=name; tm.format=format;
+  const avail=FORMATIONS[format]; if(!avail.includes(tm.formation)) tm.formation=avail[0];
+  save(); closeSheet('editTeamSheet'); updateAllDropdowns(); renderSettings(); showToast('Lag uppdaterat');
+}
+
+function deleteTeam(id) {
+  const others=Object.keys(teams).filter(k=>k!==id);
+  if (others.length===0) { showToast('Du måste ha minst ett lag'); return; }
+  if (!confirm(`Ta bort "${teams[id]?.name}"? All data försvinner.`)) return;
+  delete teams[id];
+  if (currentTeam===id) { currentTeam=others[0]; selectedMatchIdx=-1; }
+  save(); updateAllDropdowns(); renderSettings();
+}
+
+let _newTeamLevels = [];
+
+function openAddTeamSheet() {
+  _newTeamLevels = [];
+  document.getElementById('newTeamName').value = '';
+  document.getElementById('newTeamLevelInput').value = '';
+  renderNewTeamLevels();
+  openSheet('addTeamSheet');
+}
+
+function addNewTeamLevel() {
+  const name = document.getElementById('newTeamLevelInput').value.trim();
+  if (!name) return;
+  _newTeamLevels.push({ id: 'lv'+Date.now()+Math.random(), name });
+  document.getElementById('newTeamLevelInput').value = '';
+  renderNewTeamLevels();
+}
+
+function removeNewTeamLevel(idx) {
+  _newTeamLevels.splice(idx, 1);
+  renderNewTeamLevels();
+}
+
+function renderNewTeamLevels() {
+  const container = document.getElementById('newTeamLevelsContainer');
+  if (!container) return;
+  if (_newTeamLevels.length === 0) { container.innerHTML = ''; return; }
+  const colors = LEVEL_COLORS;
+  container.innerHTML = _newTeamLevels.map((lv, i) => {
+    const c = colors[i % colors.length];
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:${c.bg};border:1px solid ${c.color};">
+      <span style="flex:1;font-size:13px;font-weight:600;color:${c.color};">${lv.name}</span>
+      <button onclick="removeNewTeamLevel(${i})" style="background:none;border:none;color:${c.color};cursor:pointer;font-size:14px;">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addTeam() {
+  const name=document.getElementById('newTeamName').value.trim();
+  const format=parseInt(document.getElementById('newTeamFormat').value);
+  if (!name) { showToast('Ange ett lagnamn'); return; }
+  const id='t'+Date.now();
+  teams[id]={name,format,formation:FORMATIONS[format][0],levels:[..._newTeamLevels],players:[],coaches:[],matches:[],seasons:[],activeSeason:null};
+  _newTeamLevels = [];
+  save(); closeSheet('addTeamSheet'); document.getElementById('newTeamName').value='';
+  switchTeam(id); showToast(`Lag "${name}" skapat`);
+}
+
+// ═══════════════════════════════════════════════════════
+// ADD/REMOVE PEOPLE
+// ═══════════════════════════════════════════════════════
+function addPerson() {
+  const first=document.getElementById('newFirst').value.trim();
+  const last=document.getElementById('newLast').value.trim();
+  const jersey=parseInt(document.getElementById('newJersey').value);
+  const pos=getCheckedPositions(); if(pos.length===0){showToast('Välj minst en roll');return;}
+  if (!first||!last||!jersey) { showToast('Fyll i alla fält'); return; }
+  const t=getTeam(); const newId=Date.now();
+  const levelIds = getCheckedLevels('newLevelCheckboxes');
+  t.players.push({id:newId,first,last,jersey,pos,type:addingType,levelIds});
+  if (window._fromLineup) {
+    window._fromLineup=false;
+    const m=selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+    if (m) { if(!m.lineup) m.lineup=[]; const fc=t.format||11; if(m.lineup.length<fc) { m.lineup.push(newId); showToast(`${first} ${last} tillagd och vald!`); } else showToast(`${first} tillagd (laget fullt)`); }
+    save(); closeSheet('addPlayerSheet'); renderLineup(); return;
+  }
+  save(); closeSheet('addPlayerSheet'); renderPlayers(); showToast(`${first} ${last} tillagd`);
+}
+
+function addCoach() {
+  const first=document.getElementById('coachFirst').value.trim();
+  const last=document.getElementById('coachLast').value.trim();
+  const role=document.getElementById('coachRole').value;
+  if (!first||!last) { showToast('Fyll i namn'); return; }
+  const t=getTeam(); if(!t.coaches) t.coaches=[];
+  t.coaches.push({id:Date.now(),first,last,role});
+  save(); closeSheet('addCoachSheet'); renderPlayers(); showToast(`${first} ${last} tillagd`);
+}
+
+function removePlayer(id) {
+  const t=getTeam(); t.players=t.players.filter(p=>p.id!==id);
+  (t.matches||[]).forEach(m=>{ m.lineup=(m.lineup||[]).filter(i=>i!==id); });
+  save(); renderPlayers(); showToast('Spelare borttagen');
+}
+
+function removeCoach(id) {
+  const t=getTeam(); t.coaches=(t.coaches||[]).filter(c=>c.id!==id);
+  (t.matches||[]).forEach(m=>{ m.coaches=(m.coaches||[]).filter(i=>i!==id); });
+  save(); renderPlayers(); showToast('Tränare borttagen');
+}
+
+// ═══════════════════════════════════════════════════════
+// EXCEL IMPORTS
+// ═══════════════════════════════════════════════════════
+function handleExcelImport(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e) {
+    try {
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      const keys=Object.keys(rows[0]||{});
+      const find=(...v)=>keys.find(k=>v.some(x=>k.toLowerCase().replace(/\s/g,'').includes(x)))||null;
+      const colFirst=find('förnamn','firstname','first'); const colLast=find('efternamn','lastname','last','surname');
+      const colStatus=find('svar','status','available','tillgänglig','response');
+      if (!colFirst||!colLast) { showImportStatus('importStatus','error','❌ Hittade inte namn-kolumner'); return; }
+      const ACCEPT=/accepterad|accepted|yes|ja|available|^1$|true/i;
+      const DECLINE=/tackat nej|nej|declined|no|unavailable|false|^0$/i;
+      const t=getTeam(); const m=selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+      if (!m) { showToast('Välj en match först'); return; }
+      const squad=(t.players||[]).filter(p=>p.type==='squad');
+      let matched=0, notFound=[], declined=0, noResp=0;
+      const ids=[];
+      rows.forEach(r=>{
+        const first=String(r[colFirst]||'').trim(); const last=String(r[colLast]||'').trim();
+        if (!first) return;
+        const rowStatus=colStatus?String(r[colStatus]||'').trim():'';
+        const isAvail = colStatus?(ACCEPT.test(rowStatus)&&!DECLINE.test(rowStatus)):true;
+        const isDeclined = colStatus&&DECLINE.test(rowStatus);
+        if (isDeclined) { declined++; return; }
+        if (colStatus&&!isAvail&&!isDeclined) { noResp++; return; }
+        const player=squad.find(p=>norm(p.first+' '+p.last)===norm(first+' '+last));
+        if (player) { ids.push(player.id); matched++; }
+        else notFound.push(first+' '+last);
+      });
+      // Store availability separately — does NOT overwrite lineup
+      m.availableIds = ids;
+      save(); input.value=''; renderLineup();
+      let msg=`<div>✅ <strong>${matched}</strong> spelare förmarkerade</div>`;
+      if (declined) msg+=`<div style="color:var(--danger);margin-top:3px;">❌ ${declined} tackat nej</div>`;
+      if (noResp) msg+=`<div style="color:var(--muted);margin-top:3px;">⏳ ${noResp} ej svarat</div>`;
+      if (notFound.length>0) msg+=`<div style="color:#f0a500;margin-top:5px;font-weight:600;">Hittades inte (${notFound.length}):</div><div style="font-size:11px;color:var(--muted);">${notFound.join(', ')}</div>`;
+      showImportStatus('importStatus','success',msg);
+    } catch(err) { showImportStatus('importStatus','error','❌ '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handlePlayerImport(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''});
+      if (!rows.length) { showImportStatus('playerImportStatus','error','❌ Filen är tom'); return; }
+      const keys = Object.keys(rows[0]);
+      const find = (...v) => keys.find(k => v.some(x => k.toLowerCase().replace(/\s/g,'').includes(x))) || null;
+
+      const cFirst  = find('förnamn','firstname','first','givenname');
+      const cLast   = find('efternamn','lastname','last','surname');
+      const cJersey = find('tröjnummer','jersey','number','nummer','#');
+      const cPos    = find('position','pos','roll','role');
+      const cLevels = find('nivåer','nivå','levels','level','niva');
+      const cType   = find('typ','type','role','kategori');
+
+      if (!cFirst || !cLast) { showImportStatus('playerImportStatus','error','❌ Hittade inte Förnamn/Efternamn'); return; }
+
+      const t = getTeam();
+      const levels = getLevels();
+      let addedPlayers=0, addedCoaches=0, skipped=0;
+
+      // Valid coach role keywords
+      const COACH_ROLES = ['huvudtränare','assistent','målvaktstränare','lagledare','tränare','coach','staff'];
+      const VALID_POS = ['målvakt','försvarare','mittfältare','forward'];
+
+      rows.forEach(r => {
+        const first = String(r[cFirst]||'').trim();
+        const last  = String(r[cLast]||'').trim();
+        if (!first || !last) return;
+
+        // Determine if coach or player from Typ column or Position value
+        const typeRaw = cType ? norm(String(r[cType]||'')) : '';
+        const posRaw  = cPos  ? norm(String(r[cPos]||''))  : '';
+        const isCoach = COACH_ROLES.some(cr => typeRaw.includes(cr) || posRaw === cr ||
+          (cPos && !cType && COACH_ROLES.slice(0,4).some(cr => norm(String(r[cPos]||'')).includes(cr))));
+
+        if (isCoach) {
+          // Check duplicate
+          if ((t.coaches||[]).some(c => norm(c.first+' '+c.last) === norm(first+' '+last))) { skipped++; return; }
+          const role = COACH_ROLES.find(cr => typeRaw.includes(cr) || posRaw.includes(cr));
+          const roleLabel = role === 'huvudtränare' ? 'Huvudtränare'
+            : role === 'assistent'          ? 'Assistent'
+            : role === 'målvaktstränare'    ? 'Målvaktstränare'
+            : 'Lagledare';
+          if (!t.coaches) t.coaches = [];
+          t.coaches.push({ id: Date.now()+Math.random(), first, last, role: roleLabel });
+          addedCoaches++;
+        } else {
+          // Player — check duplicate by name
+          if ((t.players||[]).some(p => norm(p.first+' '+p.last) === norm(first+' '+last))) { skipped++; return; }
+
+          // Jersey
+          const jersey = cJersey ? parseInt(String(r[cJersey]||'')) || 0 : 0;
+
+          // Positions — split by space, comma, or semicolon; map to Swedish names
+          const posMap = { 'målvakt':'Målvakt','mv':'Målvakt','gk':'Målvakt','goalkeeper':'Målvakt',
+            'försvarare':'Försvarare','back':'Försvarare','def':'Försvarare','defender':'Försvarare','fb':'Försvarare','cb':'Försvarare',
+            'mittfältare':'Mittfältare','mitt':'Mittfältare','mid':'Mittfältare','midfielder':'Mittfältare','cm':'Mittfältare','mf':'Mittfältare',
+            'forward':'Forward','fwd':'Forward','anfall':'Forward','anfallare':'Forward','striker':'Forward','fw':'Forward' };
+          let positions = [];
+          if (cPos) {
+            const posTokens = String(r[cPos]||'').split(/[\s,;]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+            positions = posTokens.map(tok => posMap[tok] || null).filter(Boolean);
+            // Remove duplicates
+            positions = [...new Set(positions)];
+          }
+          if (!positions.length) positions = ['Försvarare']; // fallback
+
+          // Levels — split by space, comma, semicolon; match against team levels
+          let levelIds = [];
+          if (cLevels) {
+            const lvTokens = String(r[cLevels]||'').split(/[\s,;]+/).map(s=>s.trim()).filter(Boolean);
+            levelIds = lvTokens.map(tok => {
+              const lv = levels.find(l => norm(l.name) === norm(tok) || norm(l.name).includes(norm(tok)) || norm(tok).includes(norm(l.name)));
+              return lv ? lv.id : null;
+            }).filter(Boolean);
+          }
+
+          // Type: squad or loan
+          const pType = typeRaw.includes('inlånad') || typeRaw.includes('loan') ? 'loan' : 'squad';
+
+          t.players.push({ id: Date.now()+Math.random(), first, last, jersey, pos: positions, type: pType, levelIds });
+          addedPlayers++;
+        }
+      });
+
+      save(); input.value=''; renderPlayers();
+      let msg = '';
+      if (addedPlayers) msg += `<div>✅ <strong>${addedPlayers}</strong> spelare importerade</div>`;
+      if (addedCoaches) msg += `<div>✅ <strong>${addedCoaches}</strong> tränare importerade</div>`;
+      if (skipped) msg += `<div style="color:var(--muted);margin-top:3px;">⏭ ${skipped} hoppades över (finns redan)</div>`;
+      if (!addedPlayers && !addedCoaches) msg = '<div style="color:var(--muted);">Inga nya att lägga till</div>';
+      showImportStatus('playerImportStatus', 'success', msg);
+    } catch(err) { showImportStatus('playerImportStatus','error','❌ '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseExcelTime(val) {
+  if (!val && val !== 0) return '';
+  // Already a string like "11:00" or "11.00"
+  if (typeof val === 'string') {
+    const s = val.trim();
+    // HH:MM or HH.MM
+    if (/^\d{1,2}[:.]\d{2}$/.test(s)) return s.replace('.', ':');
+    // HH:MM:SS
+    if (/^\d{1,2}:\d{2}:\d{2}$/.test(s)) return s.slice(0, 5);
+    return s;
+  }
+  // Excel stores time as fraction of a day (0.0 = 00:00, 0.5 = 12:00)
+  if (typeof val === 'number') {
+    const frac = val % 1; // strip date part if datetime
+    const totalMins = Math.round(frac * 24 * 60);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+  return '';
+}
+
+function handleMatchImport(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e) {
+    try {
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      const keys=Object.keys(rows[0]||{});
+      const find=(...v)=>keys.find(k=>v.some(x=>k.toLowerCase().replace(/\s/g,'').includes(x)))||null;
+      const cDate    = find('datum','date');
+      const cOpp     = find('motståndare','opponent','opp');
+      const cKickoff = find('avspark','kickoff','starttid','start');
+      const cGather  = find('samling','gather','mötestid','collection');
+      const cDur     = find('matchlängd','duration','längd','length','minuter');
+      const cVenue   = find('plats','venue','arena');
+      const cHB      = find('hemma','borta','homeaway','hb','home');
+      const cResult  = find('resultat','result','score');
+      const cTeam    = find('lagnamn','lag','team');
+      const cLevel   = find('nivå','level','niva');
+      if (!cDate||!cOpp) { showImportStatus('matchImportStatus','error','❌ Hittade inte Datum / Motståndare'); return; }
+      const t=getTeam(); const levels=getLevels();
+      let added=0,skipped=0,filtered=0;
+      rows.forEach(r=>{
+        if (cTeam) { const rt=norm(String(r[cTeam]||'')); const tn=norm(t.name); if(rt&&!tn.includes(rt)&&!rt.includes(tn)){filtered++;return;} }
+        const opp=String(r[cOpp]||'').trim(); if(!opp) return;
+        let dateStr='';
+        const raw=r[cDate];
+        if (typeof raw==='number') { const d=new Date(Math.round((raw-25569)*86400*1000)); dateStr=d.toISOString().split('T')[0]; }
+        else { const s=String(raw).trim(); if(/^\d{4}-\d{2}-\d{2}/.test(s)) dateStr=s.slice(0,10); else if(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/.test(s)){const[,d,m,y]=s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})/);dateStr=`${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;} else dateStr=s; }
+        if ((t.matches||[]).some(m=>m.date===dateStr&&m.opp.toLowerCase()===opp.toLowerCase())){skipped++;return;}
+        // match level by name
+        let levelId='';
+        if (cLevel) { const lvName=norm(String(r[cLevel]||'')); const lv=levels.find(l=>norm(l.name)===lvName||lvName.includes(norm(l.name))); if(lv) levelId=lv.id; }
+        // Parse homeAway
+        let homeAway = '';
+        if (cHB) {
+          const hbRaw = norm(String(r[cHB]||''));
+          if (hbRaw.includes('hemma')||hbRaw==='h'||hbRaw==='home') homeAway='hemma';
+          else if (hbRaw.includes('borta')||hbRaw==='b'||hbRaw==='away') homeAway='borta';
+        }
+        t.matches.push({
+          id: 'm'+Date.now()+Math.random(), date: dateStr, opp, levelId,
+          result:   cResult  ? String(r[cResult]||'').trim()  : '',
+          venue:    cVenue   ? String(r[cVenue]||'').trim()   : '',
+          kickoff:  cKickoff ? parseExcelTime(r[cKickoff]) : '',
+          gather:   cGather  ? parseExcelTime(r[cGather])  : '',
+          duration: cDur     ? parseInt(String(r[cDur]||''))||0 : 0,
+          homeAway, lineup:[], coaches:[]
+        });
+        added++;
+      });
+      save(); renderMatchColumns(); input.value='';
+      let msg=`<div>✅ <strong>${added}</strong> matcher importerade</div>`;
+      if (skipped) msg+=`<div style="color:var(--muted);margin-top:2px;">⏭ ${skipped} hoppades över</div>`;
+      if (filtered) msg+=`<div style="color:var(--muted);margin-top:2px;">🔍 ${filtered} annat lag</div>`;
+      showImportStatus('matchImportStatus','success',msg);
+    } catch(err) { showImportStatus('matchImportStatus','error','❌ '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showImportStatus(elId,type,html) {
+  const el=document.getElementById(elId); if(!el) return;
+  el.style.display='block';
+  el.style.background=type==='success'?'rgba(61,186,116,0.1)':'rgba(231,76,60,0.1)';
+  el.style.border=`1px solid ${type==='success'?'rgba(61,186,116,0.3)':'rgba(231,76,60,0.3)'}`;
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════
+// SHEETS / TOAST
+// ═══════════════════════════════════════════════════════
+function openSheet(id) { document.getElementById(id).classList.add('open'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.sheet-backdrop').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)closeSheet(el.id);}));
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+
+// ═══════════════════════════════════════════════════════
+// DESKTOP NAV
+// ═══════════════════════════════════════════════════════
+function resetAllData() {
+  if (!confirm('Är du säker? All data raderas permanent och kan inte återställas.')) return;
+  localStorage.removeItem('lagapp_v6');
+  location.reload();
+}
+
+function buildDesktopNav() {
+  const nav=document.getElementById('desktopNav');
+  if (!nav) return;
+  [['overview','📊','Översikt'],['players','👥','Spelare'],['lineup','📋','Uttagning'],['matches','🏆','Matcher'],['settings','⚙️','Inställningar']].forEach(([id,icon,label])=>{
+    const d=document.createElement('div');
+    d.className=`desktop-nav-item${id==='overview'?' active':''}`;
+    d.id='dn-'+id; d.innerHTML=`<span class="desktop-nav-icon">${icon}</span>${label}`;
+    d.onclick=()=>showPage(id); nav.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+buildDesktopNav();
+updateAllDropdowns();
+setDefaultDate('newMatchDate');
+renderOverview();
+</script>
+</body>
+</html>
