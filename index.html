@@ -7,6 +7,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// Init Supabase early so it's ready before user clicks login
+let _supa;
+document.addEventListener('DOMContentLoaded', () => {
+  _supa = window.supabase.createClient(
+    'https://ybhzjypcdotvlciqgrpl.supabase.co',
+    'sb_publishable_3dKrAuijgGx0naYhf8zAMQ_ayKhiULp'
+  );
+});
+</script>
 <style>
 :root {
   --green-dark: #0d2b18; --green: #164d2c; --green-mid: #1f6b3c;
@@ -680,6 +690,18 @@ async function checkLogin() {
   if (!pw) return;
   const btn = document.querySelector('#loginScreen button');
   btn.textContent = '...'; btn.disabled = true;
+  // Wait for Supabase client to be ready
+  let attempts = 0;
+  while (typeof _supa === 'undefined' && attempts < 20) {
+    await new Promise(r => setTimeout(r, 100));
+    attempts++;
+  }
+  if (typeof _supa === 'undefined') {
+    document.getElementById('loginError').textContent = 'Kunde inte ansluta. Ladda om sidan.';
+    document.getElementById('loginError').style.display = 'block';
+    btn.textContent = 'Logga in'; btn.disabled = false;
+    return;
+  }
   try {
     const { data, error } = await _supa.from('settings').select('value').eq('key','password').single();
     const correctPw = data?.value || '';
@@ -703,10 +725,6 @@ async function checkLogin() {
 // ═══════════════════════════════════════════════════════
 // SUPABASE
 // ═══════════════════════════════════════════════════════
-const _supa = window.supabase.createClient(
-  'https://ybhzjypcdotvlciqgrpl.supabase.co',
-  'sb_publishable_3dKrAuijgGx0naYhf8zAMQ_ayKhiULp'
-);
 
 let teams = {};
 let currentTeam = 'loading';
