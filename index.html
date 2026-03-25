@@ -472,6 +472,16 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 </div>
 
 <!-- Add Team -->
+<!-- Team selector sheet -->
+<div class="sheet-backdrop" id="teamSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Välj lag</div>
+    <div id="teamSheetList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <button class="btn btn-ghost btn-full" onclick="closeSheet('teamSheet');openSheet('addTeamSheet')">+ Lägg till lag</button>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="addTeamSheet">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -896,13 +906,26 @@ function switchTeam(id) {
   showPage(currentPage);
 }
 
+function renderTeamSheet() {
+  const list = document.getElementById('teamSheetList');
+  if (!list) return;
+  list.innerHTML = Object.entries(teams).map(([id,t]) =>
+    `<div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;border:1.5px solid ${id===currentTeam?'var(--accent)':'var(--border)'};background:${id===currentTeam?'rgba(245,197,24,0.07)':'var(--surface2)'};cursor:pointer;" onclick="switchTeam('${id}');closeSheet('teamSheet');">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:14px;">${t.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${t.format||11}-manna · ${(t.players||[]).filter(p=>p.type==='squad').length} spelare</div>
+      </div>
+      ${id===currentTeam?'<span style="color:var(--accent);font-size:18px;">✓</span>':''}
+    </div>`
+  ).join('');
+}
+
 function updateAllDropdowns() {
   const name = teams[currentTeam]?.name || 'Välj lag';
   ['overview','players','lineup','matches','settings'].forEach(p => {
     const btn = document.getElementById('td-'+p+'-btn');
     if (btn) btn.textContent = '⚽ ' + name + ' ▾';
   });
-  // Also update teamSheet list
   renderTeamSheet();
 }
 
