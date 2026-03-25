@@ -239,6 +239,16 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
           <label class="btn btn-ghost btn-sm" style="cursor:pointer;flex-shrink:0;white-space:nowrap;">📥 Importera<input type="file" accept=".xlsx,.xls" id="playerImportInput" style="display:none;" onchange="handlePlayerImport(this)"></label>
         </div>
         <div id="playerImportStatus" style="display:none;margin-bottom:10px;padding:10px 12px;border-radius:8px;font-size:13px;border:1px solid rgba(61,186,116,0.3);background:rgba(61,186,116,0.05);"></div>
+        <div id="playerFilterBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <span style="font-size:11px;color:var(--muted);font-weight:600;">Sortera:</span>
+          <select id="playerSortSelect" class="form-control" style="flex:1;padding:5px 8px;font-size:12px;" onchange="setPlayerSort(this.value)">
+            <option value="jersey">Tröjnummer</option>
+            <option value="first">Förnamn</option>
+            <option value="last">Efternamn</option>
+            <option value="pos">Position</option>
+          </select>
+        </div>
         <div class="tabs" id="playerTabs">
           <button class="tab active" onclick="switchPlayerTab('squad')">Trupp</button>
           <button class="tab" onclick="switchPlayerTab('loan')">Inlånade</button>
@@ -1084,23 +1094,68 @@ function renderOverview() {
 // ═══════════════════════════════════════════════════════
 // PLAYERS
 // ═══════════════════════════════════════════════════════
+function sortPlayers(arr) {
+  return [...arr].sort((a,b) => {
+    if (playerSortBy==='first') return a.first.localeCompare(b.first,'sv');
+    if (playerSortBy==='last')  return a.last.localeCompare(b.last,'sv');
+    if (playerSortBy==='pos') {
+      const pa = Array.isArray(a.pos)?a.pos[0]:a.pos||'';
+      const pb = Array.isArray(b.pos)?b.pos[0]:b.pos||'';
+      return pa.localeCompare(pb,'sv');
+    }
+    return (a.jersey||0)-(b.jersey||0);
+  });
+}
+
+function renderPlayerFilterBar() {
+  const el = document.getElementById('playerFilterBar');
+  if (!el) return;
+  const levels = getLevels();
+  if (levels.length===0) { el.innerHTML=''; return; }
+  const allActive = playerLevelFilter===null;
+  let html = `<button onclick="setPlayerLevelFilter(null)" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${allActive?'var(--accent)':'var(--border)'};background:${allActive?'rgba(245,197,24,0.1)':'transparent'};color:${allActive?'var(--accent)':'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;">Alla</button>`;
+  levels.forEach(lv => {
+    const c = getLevelColor(lv.id);
+    const on = playerLevelFilter===lv.id;
+    html += `<button onclick="setPlayerLevelFilter('${lv.id}')" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${on?c.color:'var(--border)'};background:${on?c.bg:'transparent'};color:${on?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;">${lv.name}</button>`;
+  });
+  el.innerHTML = html;
+}
+
+function setPlayerLevelFilter(lvId) {
+  playerLevelFilter = lvId;
+  renderPlayers();
+}
+
+function setPlayerSort(val) {
+  playerSortBy = val;
+  renderPlayers();
+}
+
 function renderPlayers() {
   const t = getTeam();
   if (!t) return;
   const season = getActiveSeason();
-  const squad = (t.players||[]).filter(p=>p.type==='squad').sort((a,b)=>a.jersey-b.jersey);
-  const loans = (t.players||[]).filter(p=>p.type==='loan');
+
+  renderPlayerFilterBar();
+
+  // Filter by level
+  const filterFn = p => !playerLevelFilter || (p.levelIds||[]).includes(playerLevelFilter);
+
+  const squad = sortPlayers((t.players||[]).filter(p=>p.type==='squad').filter(filterFn));
+  const loans = sortPlayers((t.players||[]).filter(p=>p.type==='loan').filter(filterFn));
   const coaches = t.coaches||[];
+
   const allCnt = [...squad,...loans].map(p=>countMatchesForPlayer(p.id,currentTeam,season));
   const maxM = Math.max(...allCnt,1);
   const coachCnt = coaches.map(c=>countMatchesForCoach(c.id,currentTeam,season));
   const maxC = Math.max(...coachCnt,1);
 
   const squadHTML = squad.length===0
-    ? '<div class="empty-state"><div class="empty-icon">👕</div><div class="empty-text">Inga spelare ännu</div></div>'
+    ? '<div class="empty-state"><div class="empty-icon">👕</div><div class="empty-text">Inga spelare matchar filtret</div></div>'
     : squad.map((p,i)=>playerRowHTML(p, maxM, allCnt[i])).join('');
   const loansHTML = loans.length===0
-    ? '<div class="empty-state"><div class="empty-icon">🔄</div><div class="empty-text">Inga inlånade spelare</div></div>'
+    ? '<div class="empty-state"><div class="empty-icon">🔄</div><div class="empty-text">Inga inlånade</div></div>'
     : loans.map((p,i)=>playerRowHTML(p, maxM, allCnt[squad.length+i])).join('');
   const coachHTML = coaches.length===0
     ? '<div class="empty-state"><div class="empty-icon">🧢</div><div class="empty-text">Inga tränare</div></div>'
@@ -1115,7 +1170,7 @@ function playerRowHTML(p, maxM, cnt) {
   const isLoan = p.type==='loan';
   cnt = cnt||0;
   const loadColor = maxM>0 ? (cnt/maxM<0.5?'var(--green-light)':cnt/maxM<0.75?'#f0a500':'var(--danger)') : 'var(--green-light)';
-  const levels = (p.levelIds||[]).map(id=>levelBadgeHTML(id)).join('');
+  const levelNames = (p.levelIds||[]).map(id=>{ const lv=getLevelById(id); return lv?lv.name:''; }).filter(Boolean).join(' · ');
   return `<div class="player-row" onclick="openPlayerProfile(${p.id})">
     <div class="jersey ${isLoan?'loan':''}">${p.jersey}</div>
     <div class="player-info">
@@ -1123,8 +1178,8 @@ function playerRowHTML(p, maxM, cnt) {
       <div class="player-meta">
         ${posBadgesHTML(p.pos)}
         ${isLoan?'<span class="badge badge-loan">Inlånad</span>':''}
-        ${levels}
       </div>
+      ${levelNames?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${levelNames}</div>`:''}
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${loadColor};line-height:1;">${cnt}</div>
@@ -1180,7 +1235,9 @@ function savePlayerLevels() {
 }
 
 let profilePlayerId = null;
-let lineupLevelFilter = null;  // null=all, or a levelId string
+let lineupLevelFilter = null;
+let playerLevelFilter = null;   // null = all levels
+let playerSortBy = 'jersey';    // jersey | first | last | pos
 let lineupAvailFilter = false; // true=only show available
 
 function openPlayerProfile(pid) {
@@ -2202,7 +2259,7 @@ function handlePlayerImport(input) {
           // Positions — split by space, comma, or semicolon; map to Swedish names
           const posMap = { 'målvakt':'Målvakt','mv':'Målvakt','gk':'Målvakt','goalkeeper':'Målvakt',
             'försvarare':'Försvarare','back':'Försvarare','def':'Försvarare','defender':'Försvarare','fb':'Försvarare','cb':'Försvarare',
-            'mittfältare':'Mittfältare','mitt':'Mittfältare','mid':'Mittfältare','midfielder':'Mittfältare','cm':'Mittfältare','mf':'Mittfältare',
+            'mittfältare':'Mittfältare','mittfält':'Mittfältare','mitt':'Mittfältare','mid':'Mittfältare','midfielder':'Mittfältare','cm':'Mittfältare','mf':'Mittfältare','central':'Mittfältare',
             'forward':'Forward','fwd':'Forward','anfall':'Forward','anfallare':'Forward','striker':'Forward','fw':'Forward' };
           let positions = [];
           if (cPos) {
