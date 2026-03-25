@@ -816,55 +816,69 @@ function save() {
 }
 
 async function syncToSupabase() {
+  const t = getTeam();
+  if (!t) return;
+  const tid = currentTeam;
   try {
-    const t = getTeam();
-    const tid = currentTeam;
-
-    // Upsert team metadata
-    await _supa.from('teams').upsert({
+    // 1. Upsert team
+    const { error: tErr } = await _supa.from('teams').upsert({
       id: tid, name: t.name, format: t.format, formation: t.formation,
       levels: t.levels||[], seasons: t.seasons||[], active_season: t.activeSeason||null
     });
+    if (tErr) throw tErr;
 
-    // Sync players — delete all for team then re-insert
-    await _supa.from('players').delete().eq('team_id', tid);
-    if ((t.players||[]).length > 0) {
-      const playerRows = t.players.map((p,idx) => ({
-        id: idx + 1 + Math.trunc(Date.now()/1000)*1000 + Math.floor(Math.random()*100),
-        team_id: tid, first: p.first, last: p.last,
-        jersey: p.jersey||0, pos: p.pos||[], type: p.type||'squad', level_ids: p.levelIds||[]
-      }));
-      // Update local IDs to match DB IDs
-      playerRows.forEach((row, idx) => { t.players[idx].id = row.id; });
-      await _supa.from('players').upsert(playerRows);
+    // 2. Players — assign stable sequential IDs, then delete+insert
+    const players = (t.players||[]).map((p, idx) => ({
+      id: parseInt(tid.replace(/\D/g,'').slice(0,6)||'1') * 10000 + idx + 1,
+      team_id: tid, first: p.first, last: p.last,
+      jersey: p.jersey||0, pos: p.pos||[], type: p.type||'squad', level_ids: p.levelIds||[]
+    }));
+    players.forEach((row, idx) => { t.players[idx].id = row.id; });
+
+    const { error: pdErr } = await _supa.from('players').delete().eq('team_id', tid);
+    if (pdErr) throw pdErr;
+    if (players.length > 0) {
+      const { error: piErr } = await _supa.from('players').insert(players);
+      if (piErr) throw piErr;
     }
 
-    // Sync coaches
-    await _supa.from('coaches').delete().eq('team_id', tid);
-    if ((t.coaches||[]).length > 0) {
-      const coachRows = t.coaches.map((c,idx) => ({
-        id: idx + 1 + Math.trunc(Date.now()/1000)*1000 + 500 + Math.floor(Math.random()*100),
-        team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
-      }));
-      coachRows.forEach((row, idx) => { t.coaches[idx].id = row.id; });
-      await _supa.from('coaches').upsert(coachRows);
+    // 3. Coaches
+    const coaches = (t.coaches||[]).map((c, idx) => ({
+      id: parseInt(tid.replace(/\D/g,'').slice(0,6)||'1') * 10000 + 5000 + idx + 1,
+      team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
+    }));
+    coaches.forEach((row, idx) => { t.coaches[idx].id = row.id; });
+
+    const { error: cdErr } = await _supa.from('coaches').delete().eq('team_id', tid);
+    if (cdErr) throw cdErr;
+    if (coaches.length > 0) {
+      const { error: ciErr } = await _supa.from('coaches').insert(coaches);
+      if (ciErr) throw ciErr;
     }
 
-    // Sync matches
-    await _supa.from('matches').delete().eq('team_id', tid);
-    if ((t.matches||[]).length > 0) {
-      await _supa.from('matches').upsert(t.matches.map(m => ({
-        id: m.id||('m'+Date.now()+Math.random()), team_id: tid,
-        date: m.date, opp: m.opp, level_id: m.levelId||'',
-        result: m.result||'', venue: m.venue||'', home_away: m.homeAway||'',
-        kickoff: m.kickoff||'', gather: m.gather||'', duration: m.duration||0,
-        lineup: m.lineup||[], coaches: m.coaches||[],
-        available_ids: m.availableIds||[], season_id: m.seasonId||''
-      })));
+    // 4. Matches
+    const matches = (t.matches||[]).map(m => ({
+      id: m.id||('m_'+tid+'_'+Date.now()), team_id: tid,
+      date: m.date, opp: m.opp, level_id: m.levelId||'',
+      result: m.result||'', venue: m.venue||'', home_away: m.homeAway||'',
+      kickoff: m.kickoff||'', gather: m.gather||'', duration: m.duration||0,
+      lineup: m.lineup||[], coaches: m.coaches||[],
+      available_ids: m.availableIds||[], season_id: m.seasonId||''
+    }));
+
+    const { error: mdErr } = await _supa.from('matches').delete().eq('team_id', tid);
+    if (mdErr) throw mdErr;
+    if (matches.length > 0) {
+      const { error: miErr } = await _supa.from('matches').insert(matches);
+      if (miErr) throw miErr;
     }
+
+    // Update localStorage cache
+    try { localStorage.setItem('lagapp_v6', JSON.stringify(teams)); } catch(e) {}
+
   } catch(err) {
-    console.error('Sync error full:', JSON.stringify(err));
-    showToast('⚠️ Synkfel: ' + (err?.message || JSON.stringify(err)));
+    console.error('Sync error:', err);
+    showToast('⚠️ Synkfel: ' + (err?.message || err?.code || JSON.stringify(err)));
   }
 }
 function getTeam() { return teams[currentTeam] || null; }
