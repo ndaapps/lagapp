@@ -284,7 +284,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
               <button class="btn btn-wa btn-full" onclick="openWhatsApp()">📱 Skicka till WhatsApp</button>
               <div style="display:flex;gap:8px;">
-                <button class="btn btn-ghost" style="flex:1;" id="cancelLineupBtn" onclick="cancelLineup()" style="display:none;">Avbryt ändringar</button>
+                <button class="btn btn-ghost" style="flex:1;" id="cancelLineupBtn" onclick="cancelLineup()">Avbryt ändringar</button>
                 <button class="btn btn-green" style="flex:2;" id="saveLineupBtn" onclick="saveLineup()">💾 Spara uttagning</button>
               </div>
               <button class="btn btn-danger btn-full" id="clearLineupBtn" onclick="clearLineup()">🗑 Rensa uttagning</button>
@@ -1481,7 +1481,8 @@ function renderLineupPlayerList(sel, playerMap, fmtCount, m) {
   const alreadyOut = allWithInfo.filter(x=>x.info?.alreadyOut).length;
   const unavailCount = hasAvail ? allWithInfo.filter(x=>!x.available).length : 0;
 
-  let html = `<div class="psel-count">${sel.length} valda${hasUnsaved?' <span style="color:#f0a500;font-weight:700;">● osparad</span>':''}`;
+  const savedCount = selectedMatchIdx>=0 ? ((t.matches||[])[selectedMatchIdx]?.lineup||[]).length : 0;
+  let html = `<div class="psel-count">${sel.length} valda${hasUnsaved?' <span style="color:#f0a500;font-weight:700;"> · ● osparad</span>':''}`;
   if (hasAvail) html += ` · <span style="color:var(--green-light);">✅ ${availIds.length} tillg.</span>`;
   if (unavailCount) html += ` · <span style="color:var(--muted);">❌ ${unavailCount} ej tillg.</span>`;
   if (conflicts)   html += ` · <span style="color:var(--danger);">⚠️ ${conflicts} krock</span>`;
@@ -1610,16 +1611,27 @@ function getEffectiveLineup() {
   const t = getTeam();
   const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
   if (!m) return { lineup: [], coaches: [] };
-  if (lineupStaging) return lineupStaging;
+  // Always use staging if it exists
+  if (lineupStaging !== null) return lineupStaging;
+  // Otherwise return copy of saved state
   return { lineup: [...(m.lineup||[])], coaches: [...(m.coaches||[])] };
+}
+
+function initStaging() {
+  // Initialize staging from current match state if not already started
+  if (lineupStaging === null) {
+    const t = getTeam();
+    const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+    if (m) lineupStaging = { lineup: [...(m.lineup||[])], coaches: [...(m.coaches||[])] };
+    else lineupStaging = { lineup: [], coaches: [] };
+  }
 }
 
 function toggleLineupPlayer(id) {
   const t = getTeam();
   const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
   if (!m) { showToast('Välj en match först'); return; }
-  // Init staging from saved state if not started
-  if (!lineupStaging) lineupStaging = { lineup: [...(m.lineup||[])], coaches: [...(m.coaches||[])] };
+  initStaging();
   const idx = lineupStaging.lineup.indexOf(id);
   if (idx>-1) {
     lineupStaging.lineup.splice(idx,1);
@@ -1636,7 +1648,7 @@ function toggleLineupCoach(id) {
   const t = getTeam();
   const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
   if (!m) return;
-  if (!lineupStaging) lineupStaging = { lineup: [...(m.lineup||[])], coaches: [...(m.coaches||[])] };
+  initStaging();
   const idx = lineupStaging.coaches.indexOf(id);
   if (idx>-1) lineupStaging.coaches.splice(idx,1); else lineupStaging.coaches.push(id);
   renderLineup();
@@ -1675,10 +1687,10 @@ function clearLineup() {
   const t = getTeam();
   const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
   if (!m) return;
-  m.lineup = []; m.coaches = [];
-  lineupStaging = null;
-  save(); renderLineup(); renderSavedLineups(); populateMatchDropdown();
-  showToast('Uttagning rensad');
+  // Set staging to empty — user still needs to save
+  lineupStaging = { lineup: [], coaches: [] };
+  renderLineup();
+  showToast('Uttagning rensad — klicka Spara för att bekräfta');
 }
 
 function quickAddFromLineup(type) {
