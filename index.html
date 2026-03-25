@@ -836,7 +836,7 @@ async function syncToSupabase() {
       }));
       // Update local IDs to match DB IDs
       playerRows.forEach((row, idx) => { t.players[idx].id = row.id; });
-      await _supa.from('players').insert(playerRows);
+      await _supa.from('players').upsert(playerRows);
     }
 
     // Sync coaches
@@ -847,13 +847,13 @@ async function syncToSupabase() {
         team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
       }));
       coachRows.forEach((row, idx) => { t.coaches[idx].id = row.id; });
-      await _supa.from('coaches').insert(coachRows);
+      await _supa.from('coaches').upsert(coachRows);
     }
 
     // Sync matches
     await _supa.from('matches').delete().eq('team_id', tid);
     if ((t.matches||[]).length > 0) {
-      await _supa.from('matches').insert(t.matches.map(m => ({
+      await _supa.from('matches').upsert(t.matches.map(m => ({
         id: m.id||('m'+Date.now()+Math.random()), team_id: tid,
         date: m.date, opp: m.opp, level_id: m.levelId||'',
         result: m.result||'', venue: m.venue||'', home_away: m.homeAway||'',
