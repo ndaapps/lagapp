@@ -214,7 +214,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
       <!-- OVERVIEW -->
       <div class="page active" id="page-overview">
-        <div style="display:flex;margin-bottom:12px;"><div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-overview" onchange="switchTeam(this.value)"></select></div></div>
+        <div style="display:flex;margin-bottom:12px;"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-overview-btn">⚽ Välj lag ▾</button></div>
         <div class="stat-grid">
           <div class="stat-card"><div class="stat-num" id="stat-players">0</div><div class="stat-label">Spelare</div></div>
           <div class="stat-card"><div class="stat-num" id="stat-matches">0</div><div class="stat-label">Matcher</div></div>
@@ -234,7 +234,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
       <!-- PLAYERS -->
       <div class="page" id="page-players">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-players" onchange="switchTeam(this.value)"></select></div>
+          <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-players-btn">⚽ Välj lag ▾</button>
           <button class="btn btn-ghost btn-sm" onclick="onFab()" style="white-space:nowrap;flex-shrink:0;">+ Lägg till</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer;flex-shrink:0;white-space:nowrap;">📥 Importera<input type="file" accept=".xlsx,.xls" id="playerImportInput" style="display:none;" onchange="handlePlayerImport(this)"></label>
         </div>
@@ -251,7 +251,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
       <!-- UTTAGNING -->
       <div class="page" id="page-lineup">
-        <div style="display:flex;margin-bottom:12px;"><div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-lineup" onchange="switchTeam(this.value)"></select></div></div>
+        <div style="display:flex;margin-bottom:12px;"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-lineup-btn">⚽ Välj lag ▾</button></div>
         <div class="card">
           <div class="card-title">Välj match</div>
           <div class="form-group" style="margin-bottom:10px;">
@@ -314,7 +314,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
       <!-- MATCHES -->
       <div class="page" id="page-matches">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-matches" onchange="switchTeam(this.value)"></select></div>
+          <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-matches-btn">⚽ Välj lag ▾</button>
           <button class="btn btn-ghost btn-sm" onclick="toggleAddMatch()" style="white-space:nowrap;flex-shrink:0;">+ Ny match</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer;flex-shrink:0;white-space:nowrap;">📥 Importera<input type="file" accept=".xlsx,.xls" id="matchImportInput" style="display:none;" onchange="handleMatchImport(this)"></label>
         </div>
@@ -360,7 +360,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
       <!-- SETTINGS -->
       <div class="page" id="page-settings">
-        <div style="display:flex;margin-bottom:12px;"><div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-settings" onchange="switchTeam(this.value)"></select></div></div>
+        <div style="display:flex;margin-bottom:12px;"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-settings-btn">⚽ Välj lag ▾</button></div>
         <div class="card">
           <div class="card-title">Nivåer</div>
           <div id="levelsList"></div>
@@ -819,18 +819,25 @@ async function syncToSupabase() {
     // Sync players — delete all for team then re-insert
     await _supa.from('players').delete().eq('team_id', tid);
     if ((t.players||[]).length > 0) {
-      await _supa.from('players').insert(t.players.map(p => ({
-        id: Math.trunc(Number(p.id)), team_id: tid, first: p.first, last: p.last,
+      const playerRows = t.players.map((p,idx) => ({
+        id: idx + 1 + Math.trunc(Date.now()/1000)*1000 + Math.floor(Math.random()*100),
+        team_id: tid, first: p.first, last: p.last,
         jersey: p.jersey||0, pos: p.pos||[], type: p.type||'squad', level_ids: p.levelIds||[]
-      })));
+      }));
+      // Update local IDs to match DB IDs
+      playerRows.forEach((row, idx) => { t.players[idx].id = row.id; });
+      await _supa.from('players').insert(playerRows);
     }
 
     // Sync coaches
     await _supa.from('coaches').delete().eq('team_id', tid);
     if ((t.coaches||[]).length > 0) {
-      await _supa.from('coaches').insert(t.coaches.map(c => ({
-        id: Math.trunc(Number(c.id)), team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
-      })));
+      const coachRows = t.coaches.map((c,idx) => ({
+        id: idx + 1 + Math.trunc(Date.now()/1000)*1000 + 500 + Math.floor(Math.random()*100),
+        team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
+      }));
+      coachRows.forEach((row, idx) => { t.coaches[idx].id = row.id; });
+      await _supa.from('coaches').insert(coachRows);
     }
 
     // Sync matches
@@ -846,8 +853,8 @@ async function syncToSupabase() {
       })));
     }
   } catch(err) {
-    console.error('Sync error:', err?.message || err);
-    showToast('⚠️ Synkfel – kontrollera konsolen');
+    console.error('Sync error full:', JSON.stringify(err));
+    showToast('⚠️ Synkfel: ' + (err?.message || JSON.stringify(err)));
   }
 }
 function getTeam() { return teams[currentTeam] || null; }
@@ -890,11 +897,13 @@ function switchTeam(id) {
 }
 
 function updateAllDropdowns() {
+  const name = teams[currentTeam]?.name || 'Välj lag';
   ['overview','players','lineup','matches','settings'].forEach(p => {
-    const el = document.getElementById('td-'+p);
-    if (!el) return;
-    el.innerHTML = Object.entries(teams).map(([id,t])=>`<option value="${id}" ${id===currentTeam?'selected':''}>${t.name}</option>`).join('');
+    const btn = document.getElementById('td-'+p+'-btn');
+    if (btn) btn.textContent = '⚽ ' + name + ' ▾';
   });
+  // Also update teamSheet list
+  renderTeamSheet();
 }
 
 function switchPlayerTab(tab) {
