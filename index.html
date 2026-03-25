@@ -36,7 +36,8 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 .page { display: none; padding: 14px; }
 .page.active { display: block; }
 .team-selector-bar { margin-bottom: 12px; }
-.team-selector-bar select { width: 100%; background: var(--surface); border: 1.5px solid var(--accent); color: var(--accent); font-weight: 700; padding: 9px 12px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'Outfit', sans-serif; -webkit-appearance: none; }
+.team-selector-bar select { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 600; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'Outfit', sans-serif; -webkit-appearance: none; }
+.team-selector-bar select:focus { outline: none; border-color: var(--accent); color: var(--accent); }
 
 /* CARDS */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
@@ -213,7 +214,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
       <!-- OVERVIEW -->
       <div class="page active" id="page-overview">
-        <div class="team-selector-bar"><select id="td-overview" onchange="switchTeam(this.value)"></select></div>
+        <div style="display:flex;margin-bottom:12px;"><div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-overview" onchange="switchTeam(this.value)"></select></div></div>
         <div class="stat-grid">
           <div class="stat-card"><div class="stat-num" id="stat-players">0</div><div class="stat-label">Spelare</div></div>
           <div class="stat-card"><div class="stat-num" id="stat-matches">0</div><div class="stat-label">Matcher</div></div>
@@ -250,7 +251,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
       <!-- UTTAGNING -->
       <div class="page" id="page-lineup">
-        <div class="team-selector-bar"><select id="td-lineup" onchange="switchTeam(this.value)"></select></div>
+        <div style="display:flex;margin-bottom:12px;"><div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-lineup" onchange="switchTeam(this.value)"></select></div></div>
         <div class="card">
           <div class="card-title">Välj match</div>
           <div class="form-group" style="margin-bottom:10px;">
@@ -359,7 +360,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
       <!-- SETTINGS -->
       <div class="page" id="page-settings">
-        <div class="team-selector-bar"><select id="td-settings" onchange="switchTeam(this.value)"></select></div>
+        <div style="display:flex;margin-bottom:12px;"><div class="team-selector-bar" style="flex:1;margin-bottom:0;"><select id="td-settings" onchange="switchTeam(this.value)"></select></div></div>
         <div class="card">
           <div class="card-title">Nivåer</div>
           <div id="levelsList"></div>
