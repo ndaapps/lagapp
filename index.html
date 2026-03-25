@@ -1381,7 +1381,7 @@ function hideMatchUI() {
 function renderLineup() {
   const t = getTeam();
   const m = selectedMatchIdx>=0 ? (t.matches||[])[selectedMatchIdx] : null;
-  if (!m) { document.getElementById('fieldRows').innerHTML=''; renderLineupPlayerList([],{},t.format||11); renderLineupCoachList([]); return; }
+  if (!m) { renderLineupPlayerList([],{},t?.format||11, null, false); renderLineupCoachList([]); return; }
   if (!m.lineup) m.lineup=[];
   if (!m.coaches) m.coaches=[];
   const effective = getEffectiveLineup();
@@ -1393,7 +1393,7 @@ function renderLineup() {
   const rows = FORMATION_ROWS[formation]||FORMATION_ROWS['4-3-3'];
   const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
 
-  renderLineupPlayerList(sel, playerMap, fmtCount, m);
+  renderLineupPlayerList(sel, playerMap, fmtCount, m, hasUnsaved);
   renderLineupCoachList(selCoaches);
 }
 
@@ -1435,7 +1435,8 @@ function setLineupFilter(val) {
 }
 
 // ── Player list ──────────────────────────────────────────────────────────────
-function renderLineupPlayerList(sel, playerMap, fmtCount, m) {
+function renderLineupPlayerList(sel, playerMap, fmtCount, m, hasUnsaved) {
+  hasUnsaved = hasUnsaved || false;
   const t = getTeam();
   const el = document.getElementById('lineupPlayerList');
   if (!el) return;
