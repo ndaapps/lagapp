@@ -849,12 +849,12 @@ async function syncToSupabase() {
     showToast('⚠️ Synkfel – kontrollera konsolen');
   }
 }
-function getTeam() { return teams[currentTeam]; }
+function getTeam() { return teams[currentTeam] || null; }
 function getLevels() { return getTeam().levels || []; }
 function getLevelById(id) { return getLevels().find(l=>l.id===id); }
 function getLevelColor(levelId) { const idx = getLevels().findIndex(l=>l.id===levelId); return LEVEL_COLORS[idx % LEVEL_COLORS.length] || LEVEL_COLORS[0]; }
 function levelBadgeHTML(levelId) { if (!levelId) return ''; const lv = getLevelById(levelId); if (!lv) return ''; const c = getLevelColor(levelId); return `<span class="lvl-badge" style="background:${c.bg};color:${c.color};">${lv.name}</span>`; }
-function getActiveSeason() { return getTeam().activeSeason || null; }
+function getActiveSeason() { return getTeam()?.activeSeason || null; }
 function countMatchesForPlayer(pid, teamId, seasonId) { const t = teams[teamId||currentTeam]; if(!t) return 0; return (t.matches||[]).filter(m=>(m.lineup||[]).includes(pid)&&(!seasonId||m.seasonId===seasonId)).length; }
 function countMatchesForCoach(cid, teamId, seasonId) { const t = teams[teamId||currentTeam]; if(!t) return 0; return (t.matches||[]).filter(m=>(m.coaches||[]).includes(cid)&&(!seasonId||m.seasonId===seasonId)).length; }
 const norm = s => s.toLowerCase().replace(/\s+/g,' ').trim();
@@ -1005,6 +1005,7 @@ function setDefaultDate(id) { const d=new Date(); d.setDate(d.getDate()+7); cons
 // ═══════════════════════════════════════════════════════
 function renderOverview() {
   const t = getTeam();
+  if (!t) { document.getElementById('attendanceList').innerHTML=''; document.getElementById('recentMatchList').innerHTML='<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">Lägg till ett lag under Inställningar</div></div>'; return; }
   const season = getActiveSeason();
   document.getElementById('stat-players').textContent = (t.players||[]).filter(p=>p.type==='squad').length;
   document.getElementById('stat-matches').textContent = (t.matches||[]).length;
@@ -1038,6 +1039,7 @@ function renderOverview() {
 // ═══════════════════════════════════════════════════════
 function renderPlayers() {
   const t = getTeam();
+  if (!t) return;
   const season = getActiveSeason();
   const squad = (t.players||[]).filter(p=>p.type==='squad').sort((a,b)=>a.jersey-b.jersey);
   const loans = (t.players||[]).filter(p=>p.type==='loan');
@@ -1627,6 +1629,7 @@ function getWeekLabel(dateStr) {
 
 function renderMatchColumns() {
   const t = getTeam();
+  if (!t) { document.getElementById('matchColumns').innerHTML='<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">Lägg till ett lag under Inställningar</div></div>'; return; }
   const today = new Date(); today.setHours(0,0,0,0);
   const container = document.getElementById('matchColumns');
   container.style.display = 'block';
