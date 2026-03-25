@@ -819,7 +819,7 @@ async function syncToSupabase() {
     await _supa.from('players').delete().eq('team_id', tid);
     if ((t.players||[]).length > 0) {
       await _supa.from('players').insert(t.players.map(p => ({
-        id: p.id, team_id: tid, first: p.first, last: p.last,
+        id: Math.trunc(Number(p.id)), team_id: tid, first: p.first, last: p.last,
         jersey: p.jersey||0, pos: p.pos||[], type: p.type||'squad', level_ids: p.levelIds||[]
       })));
     }
@@ -828,7 +828,7 @@ async function syncToSupabase() {
     await _supa.from('coaches').delete().eq('team_id', tid);
     if ((t.coaches||[]).length > 0) {
       await _supa.from('coaches').insert(t.coaches.map(c => ({
-        id: c.id, team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
+        id: Math.trunc(Number(c.id)), team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
       })));
     }
 
@@ -845,7 +845,8 @@ async function syncToSupabase() {
       })));
     }
   } catch(err) {
-    console.error('Sync error:', err);
+    console.error('Sync error:', err?.message || err);
+    showToast('⚠️ Synkfel – kontrollera konsolen');
   }
 }
 function getTeam() { return teams[currentTeam]; }
@@ -2139,7 +2140,7 @@ function handlePlayerImport(input) {
             : role === 'målvaktstränare'    ? 'Målvaktstränare'
             : 'Lagledare';
           if (!t.coaches) t.coaches = [];
-          t.coaches.push({ id: Date.now()+Math.random(), first, last, role: roleLabel });
+          t.coaches.push({ id: Date.now(), first, last, role: roleLabel });
           addedCoaches++;
         } else {
           // Player — check duplicate by name
@@ -2175,7 +2176,7 @@ function handlePlayerImport(input) {
           // Type: squad or loan
           const pType = typeRaw.includes('inlånad') || typeRaw.includes('loan') ? 'loan' : 'squad';
 
-          t.players.push({ id: Date.now()+Math.random(), first, last, jersey, pos: positions, type: pType, levelIds });
+          t.players.push({ id: Date.now(), first, last, jersey, pos: positions, type: pType, levelIds });
           addedPlayers++;
         }
       });
@@ -2314,6 +2315,7 @@ async function resetAllData() {
   } catch(e) { console.error('Reset error:', e); }
   localStorage.removeItem('lagapp_v6');
   localStorage.removeItem('lagapp_team');
+  sessionStorage.removeItem('lagapp_auth');
   location.reload();
 }
 
