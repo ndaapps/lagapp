@@ -342,8 +342,11 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
         <!-- View mode: selected players only -->
         <div class="card" id="lineupSelectedCard" style="display:none;">
-          <div class="card-title">Uttagna spelare</div>
-          <div id="lineupSelectedList"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleSelectedList()">
+            <div class="card-title" style="margin-bottom:0;">Uttagna spelare</div>
+            <span id="selectedListToggleIcon" style="font-size:16px;color:var(--muted);">▾</span>
+          </div>
+          <div id="lineupSelectedList" style="margin-top:12px;"></div>
         </div>
 
       </div>
@@ -1731,8 +1734,18 @@ function saveLineup() {
   resetLineupView();
 }
 
+let selectedListExpanded = true;
+function toggleSelectedList() {
+  selectedListExpanded = !selectedListExpanded;
+  const el = document.getElementById('lineupSelectedList');
+  const icon = document.getElementById('selectedListToggleIcon');
+  if (el) el.style.display = selectedListExpanded ? 'block' : 'none';
+  if (icon) icon.textContent = selectedListExpanded ? '▾' : '▸';
+}
+
 function enterEditMode() {
   lineupEditMode = true;
+  selectedListExpanded = true;
   renderLineup();
   updateLineupModeUI();
 }
