@@ -221,6 +221,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
           <div class="stat-card"><div class="stat-num" id="stat-levels">0</div><div class="stat-label">Nivåer</div></div>
           <div class="stat-card"><div class="stat-num" id="stat-form">–</div><div class="stat-label">Formation</div></div>
         </div>
+        <div id="levelStatsSection"></div>
         <div class="card">
           <div class="card-title">Närvaro – topp 8</div>
           <div id="attendanceList"></div>
@@ -306,6 +307,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
             <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">Sparade uttagningar</div>
             <button class="btn btn-wa btn-sm" onclick="openWhatsApp()">📱 WhatsApp</button>
           </div>
+          <div id="savedLineupsList"></div>
         </div>
 
         <!-- Availability import -->
@@ -659,7 +661,8 @@ function posBadgesHTML(pos) {
 }
 function posShortHTML(pos) {
   const arr = Array.isArray(pos) ? pos : [pos];
-  return arr.map(p=>`<span class="badge ${POS_BADGE[p]||'badge-mid'}" style="font-size:10px;">${p.slice(0,3)}</span>`).join('');
+  const abbr = {'Målvakt':'Mv','Försvarare':'Back','Mittfältare':'Mitt','Forward':'Fwd'};
+  return arr.map(p=>`<span class="badge ${POS_BADGE[p]||'badge-mid'}" style="font-size:10px;">${abbr[p]||p.slice(0,3)}</span>`).join('');
 }
 // Level colors cycling
 const LEVEL_COLORS = [
@@ -1104,6 +1107,8 @@ function renderOverview() {
       <div style="width:22px;text-align:right;font-size:13px;color:var(--muted);">${p.dynM}</div>
     </div>`).join('');
 
+  renderLevelStats(t);
+
   const recent = [...(t.matches||[])].filter(m=>m.result).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5);
   document.getElementById('recentMatchList').innerHTML = recent.length===0
     ? '<div class="empty-state" style="padding:20px 0;"><div class="empty-icon" style="font-size:28px;">🏆</div><div class="empty-text">Inga spelade matcher</div></div>'
@@ -1112,6 +1117,83 @@ function renderOverview() {
         <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${m.opp}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${levelBadgeHTML(m.levelId)}</div></div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);">${m.result}</div>
       </div>`;}).join('');
+}
+
+function parseGoals(result) {
+  // Parse "2–1", "2-1", "2:1" etc → {scored, conceded}
+  if (!result) return null;
+  const m = result.match(/(\d+)\s*[–\-:]\s*(\d+)/);
+  if (!m) return null;
+  return { scored: parseInt(m[1]), conceded: parseInt(m[2]) };
+}
+
+function renderLevelStats(t) {
+  const el = document.getElementById('levelStatsSection');
+  if (!el) return;
+  const levels = getLevels();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const season = getActiveSeason();
+  const matches = (t.matches||[]).filter(m => !season || m.seasonId === season);
+
+  if (levels.length === 0) { el.innerHTML = ''; return; }
+
+  let html = '';
+  levels.forEach(lv => {
+    const c = getLevelColor(lv.id);
+    const lvMatches = matches.filter(m => m.levelId === lv.id);
+    const played = lvMatches.filter(m => m.result && new Date(m.date+'T00:00:00') < today);
+    const upcoming = lvMatches.filter(m => !m.result || new Date(m.date+'T00:00:00') >= today)
+      .sort((a,b) => new Date(a.date) - new Date(b.date));
+    const nextMatch = upcoming[0];
+
+    let wins = 0, goalsScored = 0, goalsConceded = 0;
+    played.forEach(m => {
+      const g = parseGoals(m.result);
+      if (!g) return;
+      goalsScored += g.scored;
+      goalsConceded += g.conceded;
+      if (g.scored > g.conceded) wins++;
+    });
+
+    const nextMatchHTML = nextMatch ? (() => {
+      const d = new Date(nextMatch.date);
+      const dayStr = d.toLocaleDateString('sv-SE', {weekday:'short', day:'numeric', month:'short'});
+      const time = nextMatch.kickoff ? ` · ${nextMatch.kickoff}` : '';
+      const hb = nextMatch.homeAway === 'hemma' ? ' · Hemma' : nextMatch.homeAway === 'borta' ? ' · Borta' : '';
+      return `<div style="margin-bottom:10px;padding:10px;background:var(--surface);border-radius:8px;border-left:3px solid ${c.color};">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:3px;">Nästa match</div>
+        <div style="font-size:14px;font-weight:700;">${nextMatch.opp}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${dayStr}${time}${hb}</div>
+      </div>`;
+    })() : `<div style="margin-bottom:10px;padding:10px;background:var(--surface);border-radius:8px;"><div style="font-size:12px;color:var(--muted);">Inga kommande matcher</div></div>`;
+
+    html += `<div class="card" style="margin-bottom:10px;border-color:${c.color}33;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:${c.bg};color:${c.color};">${lv.name}</span>
+      </div>
+      ${nextMatchHTML}
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+        <div style="text-align:center;background:var(--surface);border-radius:8px;padding:10px 6px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--text);line-height:1;">${played.length}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Matcher</div>
+        </div>
+        <div style="text-align:center;background:var(--surface);border-radius:8px;padding:10px 6px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--green-light);line-height:1;">${wins}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Vinster</div>
+        </div>
+        <div style="text-align:center;background:var(--surface);border-radius:8px;padding:10px 6px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--accent);line-height:1;">${goalsScored}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Gjorda</div>
+        </div>
+        <div style="text-align:center;background:var(--surface);border-radius:8px;padding:10px 6px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--danger);line-height:1;">${goalsConceded}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;margin-top:2px;">Insläppta</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1350,12 +1432,14 @@ function renderSavedLineups() {
       return aFut ? aDate-bDate : bDate-aDate; // upcoming: earliest first, past: latest first
     })
     .slice(0, 10);
-  if (withLineup.length===0) { el.innerHTML=''; el.style.display='none'; return; }
+  if (withLineup.length===0) { el.style.display='none'; const ll=document.getElementById('savedLineupsList'); if(ll) ll.innerHTML=''; return; }
   el.style.display='block';
   const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
   const coachMap = {}; (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
 
-  el.innerHTML = withLineup.map(({m,i})=>{
+  const listEl = document.getElementById('savedLineupsList');
+  if (!listEl) return;
+  listEl.innerHTML = withLineup.map(({m,i})=>{
     const d = new Date(m.date);
     const lc = (m.lineup||[]).length;
     const isComplete = lc >= fmtCount;
@@ -1397,7 +1481,7 @@ function renderSavedLineups() {
       <div id="sl-list-${i}" style="background:var(--surface);padding:0 10px;display:none;">
         ${playerListHTML}
         <div style="padding:8px 0;display:flex;gap:8px;">
-          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="event.stopPropagation();selectMatch(${i})">✏️ Redigera</button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="event.stopPropagation();selectAndEdit(${i})">✏️ Redigera</button>
         </div>
       </div>
     </div>`;
@@ -1767,6 +1851,22 @@ function toggleSavedLineup(idx) {
   if (icon) icon.textContent = open ? '▾' : '▴';
 }
 
+function selectAndEdit(idx) {
+  // Select match and immediately enter edit mode
+  const t = getTeam();
+  if (isNaN(idx) || idx < 0) return;
+  selectedMatchIdx = idx;
+  lineupLevelFilter = null;
+  lineupAvailFilter = false;
+  lineupStaging = null;
+  lineupSortBy = 'jersey';
+  lineupEditMode = true;
+  showMatchInfoBar(idx);
+  renderLineup();
+  // Scroll to top of lineup page
+  document.getElementById('scrollArea')?.scrollTo(0, 0);
+}
+
 function enterEditMode() {
   lineupEditMode = true;
   selectedListExpanded = true;
@@ -2021,8 +2121,8 @@ function matchCardHTML(m, i, isPast) {
   const hasLineup = lineupCount > 0;
 
   let lineupTag = '';
-  if (isComplete) lineupTag = '<span style="font-size:10px;background:rgba(61,186,116,0.2);color:#3dba74;border-radius:4px;padding:1px 5px;font-weight:700;">✓ Klar</span>';
-  else if (hasLineup) lineupTag = `<span style="font-size:10px;background:rgba(245,197,24,0.15);color:#f5c518;border-radius:4px;padding:1px 5px;font-weight:700;">${lineupCount}/${fmtCount}</span>`;
+  if (isComplete) lineupTag = '<span style="font-size:10px;background:rgba(255,255,255,0.12);color:var(--text);border:1px solid rgba(255,255,255,0.2);border-radius:4px;padding:1px 5px;font-weight:700;">✓ Uttagen</span>';
+  else if (hasLineup) lineupTag = `<span style="font-size:10px;background:rgba(255,255,255,0.07);color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-weight:700;">${lineupCount} spel</span>`;
 
   const hbLabel = m.homeAway==='hemma' ? 'Hemma' : m.homeAway==='borta' ? 'Borta' : '';
   const metaParts = [
