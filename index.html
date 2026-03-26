@@ -1741,6 +1741,8 @@ function toggleSelectedList() {
   const icon = document.getElementById('selectedListToggleIcon');
   if (el) el.style.display = selectedListExpanded ? 'block' : 'none';
   if (icon) icon.textContent = selectedListExpanded ? '▾' : '▸';
+  // prevent updateLineupModeUI from overriding display
+  el._manualToggle = true;
 }
 
 function enterEditMode() {
@@ -1805,7 +1807,18 @@ function updateLineupModeUI() {
     }
 
     const el = document.getElementById('lineupSelectedList');
-    if (el) el.innerHTML = html || '<div style="color:var(--muted);font-size:13px;">Inga spelare uttagna</div>';
+    if (el) {
+      el.innerHTML = html || '<div style="color:var(--muted);font-size:13px;">Inga spelare uttagna</div>';
+      // Respect collapse state
+      if (!el._manualToggle) {
+        el.style.display = 'block';
+        selectedListExpanded = true;
+        const icon = document.getElementById('selectedListToggleIcon');
+        if (icon) icon.textContent = '▾';
+      } else {
+        el.style.display = selectedListExpanded ? 'block' : 'none';
+      }
+    }
   }
 }
 
