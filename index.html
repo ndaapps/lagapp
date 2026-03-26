@@ -602,6 +602,9 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
       <div class="form-group"><label>Kategori</label><select class="form-control" id="mdCategory"><option value="">– Ingen –</option></select></div>
       <div class="form-group"><label>Nivå</label><select class="form-control" id="mdLevelSelect"><option value="">– Ingen –</option></select></div>
     </div>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group"><label>Säsong</label><select class="form-control" id="mdSeason"><option value="">– Ingen –</option></select></div>
+    </div>
     <div class="form-row" style="margin-bottom:12px;">
       <div class="form-group"><label>Resultat (t.ex. 2–1)</label><input class="form-control" id="mdResult" placeholder="2–1"></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:6px;">Mål för<span style="font-size:10px;color:var(--muted);">(auto)</span></label>
@@ -920,7 +923,7 @@ async function syncToSupabase() {
     // 4. Matches
     const matches = (t.matches||[]).map(m => ({
       id: m.id||('m_'+tid+'_'+Date.now()), team_id: tid,
-      date: m.date, opp: m.opp, level_id: m.levelId||'',
+      date: m.date, opp: m.opp, level_id: m.levelId||'', category_id: m.categoryId||'',
       result: m.result||'', venue: m.venue||'', home_away: m.homeAway||'',
       kickoff: m.kickoff||'', gather: m.gather||'', duration: m.duration||0,
       lineup: m.lineup||[], coaches: m.coaches||[],
@@ -2295,6 +2298,11 @@ function openMatchDetail(idx) {
   if (mdLvSel) {
     mdLvSel.innerHTML = '<option value="">– Ingen –</option>' + getLevels().map(l=>`<option value="${l.id}" ${m.levelId===l.id?'selected':''}>${l.name}</option>`).join('');
   }
+  const mdSeasonSel = document.getElementById('mdSeason');
+  if (mdSeasonSel) {
+    const seasons = getTeam()?.seasons||[];
+    mdSeasonSel.innerHTML = '<option value="">– Ingen –</option>' + seasons.map(s=>`<option value="${s.id}" ${m.seasonId===s.id?'selected':''}>${s.name}</option>`).join('');
+  }
   populateNewMatchCategory();
   const mdCat = document.getElementById('mdCategory');
   if (mdCat) mdCat.value = m.categoryId||'';
@@ -2340,6 +2348,7 @@ function saveMatchDetail() {
   m.homeAway   = document.getElementById('mdHomeAway').value;
   m.levelId    = document.getElementById('mdLevelSelect')?.value || m.levelId || '';
   m.categoryId = document.getElementById('mdCategory')?.value || '';
+  m.seasonId   = document.getElementById('mdSeason')?.value || '';
   save(); closeSheet('matchDetailSheet'); renderMatchColumns();
   showToast('Match uppdaterad');
 }
