@@ -1968,29 +1968,89 @@ function quickAddFromLineup(type) {
 // ═══════════════════════════════════════════════════════
 function openWhatsApp() {
   const t = getTeam();
-  const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
-  if (!m) { showToast('Välj en match först'); return; }
-  const venue = document.getElementById('matchVenue').value.trim()||m.venue||'Hemmaplan';
-  const time  = document.getElementById('matchTime').value||m.time||'09:30';
-  const playerMap={}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
-  const coachMap={};  (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
-  const sel = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
-  const coaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
-  const loans = sel.filter(p=>p.type==='loan');
-  const lv = getLevelById(m.levelId);
-  const d = new Date(m.date);
-  let text = `⚽ KALLELSE – ${t.name.toUpperCase()}\n\n`;
-  text += `🏟 ${m.opp}\n📅 ${d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'})}\n`;
-  text += `📍 ${venue}${m.homeAway?' ('+( m.homeAway==='hemma'?'Hemma':'Borta')+')':''}\n⏰ Samling kl. ${time}\n`;
-  if (m.kickoff) text += `⚽ Avspark: ${m.kickoff}${m.duration?' ('+m.duration+' min)':''}\n`;
-  if (lv) text += `🎮 Nivå: ${lv.name}\n`;
-  text += `\nSTARTUPPSTÄLLNING:\n${sel.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
-  if (coaches.length) text+=`\n🧢 Tränare:\n${coaches.map(c=>`  ${c.first} ${c.last} (${c.role})`).join('\n')}\n`;
-  if (loans.length) text+=`\n🔄 Inlånade:\n${loans.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
-  text+=`\n– Lagledningen`;
-  document.getElementById('waBubble').textContent=text;
+  const fmtCount = t.format || 11;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const withLineup = (t.matches||[]).map((m,i)=>({m,i}))
+    .filter(({m})=>(m.lineup||[]).length > 0)
+    .sort((a,b)=>{
+      const aDate=new Date(a.m.date); const bDate=new Date(b.m.date);
+      const aFut=aDate>=today; const bFut=bDate>=today;
+      if (aFut&&!bFut) return -1; if (!aFut&&bFut) return 1;
+      return aFut ? aDate-bDate : bDate-aDate;
+    });
+  if (withLineup.length===0) { showToast('Inga uttagningar att skicka'); return; }
+
+  document.getElementById('waMatchPicker').innerHTML = withLineup.map(({m,i})=>{
+    const d = new Date(m.date);
+    const lv = getLevelById(m.levelId);
+    const lc = (m.lineup||[]).length;
+    const isComplete = lc >= fmtCount;
+    const isPast = d < today;
+    const preChecked = !isPast;
+    return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;opacity:${isPast?0.6:1};" id="wapick-${i}">
+      <input type="checkbox" value="${i}" ${preChecked?'checked':''} style="width:16px;height:16px;cursor:pointer;" onchange="updateWAPickStyle(${i},this.checked)">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;">${d.toLocaleDateString('sv-SE',{day:'numeric',month:'short'})} – ${m.opp}</div>
+        <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare${isPast?' · Spelad':''}</div>
+      </div>
+      <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:${isComplete?'rgba(61,186,116,0.15)':'rgba(245,197,24,0.12)'};color:${isComplete?'#3dba74':'#f5c518'};">${isComplete?'✓':lc+'/'+fmtCount}</span>
+    </label>`;
+  }).join('');
+
+  withLineup.forEach(({i,m})=>{
+    const isPast = new Date(m.date) < today;
+    updateWAPickStyle(i, !isPast);
+  });
+
+  document.getElementById('waPickStep').style.display='block';
+  document.getElementById('waPreviewStep').style.display='none';
   openSheet('waSheet');
 }
+
+function updateWAPickStyle(i, checked) {
+  const label = document.getElementById('wapick-'+i);
+  if (!label) return;
+  label.style.borderColor = checked ? 'var(--accent)' : 'var(--border)';
+  label.style.background  = checked ? 'rgba(245,197,24,0.06)' : 'var(--surface2)';
+}
+
+function backToWAPick() {
+  document.getElementById('waPickStep').style.display='block';
+  document.getElementById('waPreviewStep').style.display='none';
+}
+
+function buildWAMessage() {
+  const t = getTeam();
+  const selected = [...document.querySelectorAll('#waMatchPicker input:checked')].map(cb=>parseInt(cb.value));
+  if (selected.length===0) { showToast('Välj minst en match'); return; }
+  const playerMap={}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
+  const coachMap={};  (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
+  let text = `⚽ KALLELSE – ${t.name.toUpperCase()}\n`;
+  selected.forEach(idx => {
+    const m = (t.matches||[])[idx];
+    if (!m) return;
+    const d = new Date(m.date);
+    const lv = getLevelById(m.levelId);
+    const sel = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
+    const coaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
+    const loans = sel.filter(p=>p.type==='loan');
+    if (selected.length > 1) text += `\n${'─'.repeat(24)}\n`;
+    text += `\n🏟 ${m.opp}\n`;
+    text += `📅 ${d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'})}\n`;
+    if (m.venue) text += `📍 ${m.venue}${m.homeAway?' ('+(m.homeAway==='hemma'?'Hemma':'Borta')+')':''}\n`;
+    if (m.gather) text += `⏰ Samling kl. ${m.gather}\n`;
+    if (m.kickoff) text += `⚽ Avspark: ${m.kickoff}${m.duration?' ('+m.duration+' min)':''}\n`;
+    if (lv) text += `🎮 Nivå: ${lv.name}\n`;
+    text += `\nSTARTUPPSTÄLLNING:\n${sel.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
+    if (coaches.length) text+=`\n🧢 Tränare:\n${coaches.map(c=>`  ${c.first} ${c.last} (${c.role})`).join('\n')}\n`;
+    if (loans.length) text+=`\n🔄 Inlånade:\n${loans.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
+  });
+  text += `\n– Lagledningen`;
+  document.getElementById('waBubble').textContent = text;
+  document.getElementById('waPickStep').style.display='none';
+  document.getElementById('waPreviewStep').style.display='block';
+}
+
 function sendWA() { window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('waBubble').textContent),'_blank'); }
 function copyWA() { navigator.clipboard.writeText(document.getElementById('waBubble').textContent); showToast('📋 Kopierat!'); }
 
