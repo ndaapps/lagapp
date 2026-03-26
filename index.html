@@ -1207,6 +1207,7 @@ function renderLevelStats(t) {
 
     html += `<div class="card" style="margin-bottom:10px;border-color:${c.color}33;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Nivå</div>
         <span style="font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:${c.bg};color:${c.color};">${lv.name}</span>
       </div>
       ${nextMatchHTML}
@@ -1234,7 +1235,8 @@ function renderLevelStats(t) {
   // Category stats
   const cats = getCategories();
   if (cats.length > 0) {
-    let catHtml = '<div class="card" style="margin-bottom:10px;"><div class="card-title" style="margin-bottom:10px;">Stats per kategori</div>';
+    let catHtml = '<div class="card" style="margin-bottom:10px;">';
+    catHtml += '<div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Kategori</div>';
     cats.forEach(cat => {
       const c = getCategoryColor(cat.id);
       const catM = matches.filter(m => m.categoryId === cat.id);
@@ -2277,6 +2279,7 @@ function matchCardHTML(m, i, isPast) {
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
         <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</span>
         ${levelBadgeHTML(m.levelId)}
+        ${categoryBadgeHTML(m.categoryId)}
         ${lineupTag}
       </div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);flex-shrink:0;">${m.result||'–'}</div>
