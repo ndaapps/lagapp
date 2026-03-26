@@ -369,6 +369,9 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
             <div class="form-group"><label>Nivå</label><select class="form-control" id="newMatchLevel"></select></div>
           </div>
           <div class="form-row">
+            <div class="form-group"><label>Kategori</label><select class="form-control" id="newMatchCategory"><option value="">– Ingen –</option></select></div>
+          </div>
+          <div class="form-row">
             <div class="form-group"><label>Arena/plats</label><input class="form-control" id="newMatchVenue" placeholder="t.ex. Ängsvallen"></div>
             <div class="form-group"><label>Resultat</label><input class="form-control" id="newMatchResult" placeholder="2–1"></div>
           </div>
@@ -396,6 +399,14 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
       <!-- SETTINGS -->
       <div class="page" id="page-settings">
         <div style="display:flex;margin-bottom:12px;"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-settings-btn">⚽ Välj lag ▾</button></div>
+        <div class="card">
+          <div class="card-title">Kategorier</div>
+          <div id="categoriesList"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;align-items:center;">
+            <input class="form-control" id="newCategoryName" placeholder="Ny kategori, t.ex. Serie" style="flex:1;">
+            <button class="btn btn-primary btn-sm" onclick="addCategory()">+ Lägg till</button>
+          </div>
+        </div>
         <div class="card">
           <div class="card-title">Nivåer</div>
           <div id="levelsList"></div>
@@ -669,6 +680,14 @@ const LEVEL_COLORS = [
   {bg:'rgba(245,197,24,0.15)',color:'#f5c518'},
   {bg:'rgba(255,107,53,0.15)',color:'#ff6b35'},
 ];
+// Category colors cycling
+const CAT_COLORS = [
+  {bg:'rgba(167,139,250,0.15)',color:'#a78bfa'},
+  {bg:'rgba(251,146,60,0.15)',color:'#fb923c'},
+  {bg:'rgba(34,211,238,0.15)',color:'#22d3ee'},
+  {bg:'rgba(251,191,36,0.15)',color:'#fbbf24'},
+  {bg:'rgba(248,113,113,0.15)',color:'#f87171'},
+];
 
 // ═══════════════════════════════════════════════════════
 // STATE
@@ -792,7 +811,7 @@ async function loadFromSupabase() {
     (mRes.data||[]).forEach(m => {
       if (!teams[m.team_id]) return;
       teams[m.team_id].matches.push({
-        id: m.id, date: m.date, opp: m.opp, levelId: m.level_id,
+        id: m.id, date: m.date, opp: m.opp, levelId: m.level_id, categoryId: m.category_id||'',
         result: m.result, venue: m.venue, homeAway: m.home_away,
         kickoff: m.kickoff, gather: m.gather, duration: m.duration,
         lineup: m.lineup||[], coaches: m.coaches||[],
@@ -918,6 +937,10 @@ async function syncToSupabase() {
 function getTeam() { return teams[currentTeam] || null; }
 function getLevels() { return getTeam().levels || []; }
 function getLevelById(id) { return getLevels().find(l=>l.id===id); }
+function getCategories() { return getTeam()?.categories || []; }
+function getCategoryById(id) { return getCategories().find(c=>c.id===id); }
+function getCategoryColor(catId) { const idx = getCategories().findIndex(c=>c.id===catId); return CAT_COLORS[idx % CAT_COLORS.length] || CAT_COLORS[0]; }
+function categoryBadgeHTML(catId) { if (!catId) return ''; const cat=getCategoryById(catId); if (!cat) return ''; const c=getCategoryColor(catId); return `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c.bg};color:${c.color};">${cat.name}</span>`; }
 function getLevelColor(levelId) { const idx = getLevels().findIndex(l=>l.id===levelId); return LEVEL_COLORS[idx % LEVEL_COLORS.length] || LEVEL_COLORS[0]; }
 function levelBadgeHTML(levelId) { if (!levelId) return ''; const lv = getLevelById(levelId); if (!lv) return ''; const c = getLevelColor(levelId); return `<span class="lvl-badge" style="background:${c.bg};color:${c.color};">${lv.name}</span>`; }
 function getActiveSeason() { return getTeam()?.activeSeason || null; }
@@ -1191,7 +1214,43 @@ function renderLevelStats(t) {
     </div>`;
   });
 
-  el.innerHTML = html;
+  // Category stats
+  const cats = getCategories();
+  if (cats.length > 0) {
+    let catHtml = '<div class="card" style="margin-bottom:10px;"><div class="card-title" style="margin-bottom:10px;">Stats per kategori</div>';
+    cats.forEach(cat => {
+      const c = getCategoryColor(cat.id);
+      const catM = matches.filter(m => m.categoryId === cat.id);
+      const played = catM.filter(m => m.result && new Date(m.date+'T00:00:00') < today);
+      let wins=0, gs=0, gc=0;
+      played.forEach(m => { const g=parseGoals(m.result); if(!g) return; gs+=g.scored; gc+=g.conceded; if(g.scored>g.conceded) wins++; });
+      catHtml += `<div style="margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:${c.bg};color:${c.color};">${cat.name}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+          <div style="text-align:center;background:var(--surface);border-radius:8px;padding:8px 4px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;">${played.length}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Matcher</div>
+          </div>
+          <div style="text-align:center;background:var(--surface);border-radius:8px;padding:8px 4px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--green-light);line-height:1;">${wins}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Vinster</div>
+          </div>
+          <div style="text-align:center;background:var(--surface);border-radius:8px;padding:8px 4px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--accent);line-height:1;">${gs}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Gjorda</div>
+          </div>
+          <div style="text-align:center;background:var(--surface);border-radius:8px;padding:8px 4px;">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--danger);line-height:1;">${gc}</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Insläppta</div>
+          </div>
+        </div>
+      </div>`;
+    });
+    catHtml += '</div>';
+    el.innerHTML += catHtml;
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2063,6 +2122,7 @@ function populateNewMatchLevel() {
   if (!sel) return;
   if (levels.length===0) { sel.innerHTML='<option value="">Inga nivåer – lägg till i Inställningar</option>'; return; }
   sel.innerHTML = levels.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+  populateNewMatchCategory();
 }
 
 function addMatch() {
@@ -2072,12 +2132,13 @@ function addMatch() {
   const result = document.getElementById('newMatchResult').value.trim();
   if (!opp||!date) { showToast('Ange motståndare och datum'); return; }
   const t = getTeam();
-  const kickoff  = document.getElementById('newMatchKickoff').value;
-  const duration = parseInt(document.getElementById('newMatchDuration').value)||60;
-  const gather   = document.getElementById('newMatchGather').value;
-  const venue    = document.getElementById('newMatchVenue').value.trim();
+  const kickoff    = document.getElementById('newMatchKickoff').value;
+  const duration   = parseInt(document.getElementById('newMatchDuration').value)||60;
+  const gather     = document.getElementById('newMatchGather').value;
+  const venue      = document.getElementById('newMatchVenue').value.trim();
+  const categoryId = document.getElementById('newMatchCategory')?.value || '';
   const homeAway = getHomeAway();
-  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
+  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, categoryId, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
   save();
   ['newMatchOpp','newMatchResult','newMatchVenue'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('input[name="newMatchHB"]').forEach(r=>r.checked=false);
@@ -2274,6 +2335,7 @@ function removeMatchFromDetail() {
 // ═══════════════════════════════════════════════════════
 function renderSettings() {
   const t = getTeam();
+  renderCategoriesList();
   renderLevelsList();
   renderSeasonsList();
   renderTeamList();
@@ -2324,6 +2386,51 @@ function toggleAddMatch() {
   const open = el.style.display !== 'none';
   el.style.display = open ? 'none' : 'block';
   if (!open) setDefaultDate('newMatchDate');
+}
+
+function renderCategoriesList() {
+  const t = getTeam();
+  if (!t) return;
+  const cats = t.categories||[];
+  const el = document.getElementById('categoriesList');
+  if (!el) return;
+  if (cats.length===0) { el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:6px 0;">Inga kategorier – lägg till nedan</div>'; return; }
+  el.innerHTML = cats.map(cat=>{
+    const c = getCategoryColor(cat.id);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:${c.bg};color:${c.color};">${cat.name}</span>
+      <div style="flex:1;font-size:12px;color:var(--muted);">${(t.matches||[]).filter(m=>m.categoryId===cat.id).length} matcher</div>
+      <button class="icon-btn" onclick="removeCategory('${cat.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addCategory() {
+  const name = document.getElementById('newCategoryName').value.trim();
+  if (!name) { showToast('Ange ett namn'); return; }
+  const t = getTeam();
+  if (!t.categories) t.categories=[];
+  t.categories.push({id:'cat'+Date.now(), name});
+  document.getElementById('newCategoryName').value='';
+  save(); renderSettings(); populateNewMatchCategory();
+  showToast(`Kategori "${name}" tillagd`);
+}
+
+function removeCategory(id) {
+  const t = getTeam();
+  if (!confirm('Ta bort kategorin? Matcher kopplade till den förlorar sin kategorikoppling.')) return;
+  t.categories = (t.categories||[]).filter(c=>c.id!==id);
+  (t.matches||[]).forEach(m=>{ if(m.categoryId===id) m.categoryId=''; });
+  save(); renderSettings(); populateNewMatchCategory(); renderMatchColumns();
+}
+
+function populateNewMatchCategory() {
+  const cats = getCategories();
+  ['newMatchCategory','mdCategory'].forEach(elId => {
+    const sel = document.getElementById(elId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">– Ingen –</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  });
 }
 
 function addLevel() {
