@@ -595,6 +595,10 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
         </select>
       </div>
     </div>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group"><label>Kategori</label><select class="form-control" id="mdCategory"><option value="">– Ingen –</option></select></div>
+      <div class="form-group"><label>Nivå</label><select class="form-control" id="mdLevelSelect"><option value="">– Ingen –</option></select></div>
+    </div>
     <div class="form-row" style="margin-bottom:12px;">
       <div class="form-group"><label>Resultat (t.ex. 2–1)</label><input class="form-control" id="mdResult" placeholder="2–1"></div>
       <div class="form-group"><label style="display:flex;align-items:center;gap:6px;">Mål för<span style="font-size:10px;color:var(--muted);">(auto)</span></label>
@@ -2275,7 +2279,15 @@ function openMatchDetail(idx) {
   const d = new Date(m.date);
   document.getElementById('mdOpp').textContent = m.opp;
   document.getElementById('mdMeta').textContent = d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
-  document.getElementById('mdLevel').innerHTML = levelBadgeHTML(m.levelId);
+  // Populate level and category dropdowns
+  const mdLvSel = document.getElementById('mdLevelSelect');
+  if (mdLvSel) {
+    mdLvSel.innerHTML = '<option value="">– Ingen –</option>' + getLevels().map(l=>`<option value="${l.id}" ${m.levelId===l.id?'selected':''}>${l.name}</option>`).join('');
+  }
+  populateNewMatchCategory();
+  const mdCat = document.getElementById('mdCategory');
+  if (mdCat) mdCat.value = m.categoryId||'';
+  document.getElementById('mdLevel').innerHTML = levelBadgeHTML(m.levelId) + categoryBadgeHTML(m.categoryId);
   document.getElementById('mdResult').value = m.result||'';
   document.getElementById('mdVenue').value = m.venue||'';
   document.getElementById('mdKickoff').value = m.kickoff||'';
@@ -2314,7 +2326,9 @@ function saveMatchDetail() {
   m.venue    = document.getElementById('mdVenue').value.trim();
   m.kickoff  = document.getElementById('mdKickoff').value;
   m.gather   = document.getElementById('mdGather').value;
-  m.homeAway = document.getElementById('mdHomeAway').value;
+  m.homeAway   = document.getElementById('mdHomeAway').value;
+  m.levelId    = document.getElementById('mdLevelSelect')?.value || m.levelId || '';
+  m.categoryId = document.getElementById('mdCategory')?.value || '';
   save(); closeSheet('matchDetailSheet'); renderMatchColumns();
   showToast('Match uppdaterad');
 }
@@ -2826,7 +2840,8 @@ function handleMatchImport(input) {
       const cHB      = find('hemma','borta','homeaway','hb','home');
       const cResult  = find('resultat','result','score');
       const cTeam    = find('lagnamn','lag','team');
-      const cLevel   = find('nivå','level','niva');
+      const cLevel    = find('nivå','level','niva');
+      const cCategory = find('kategori','category','typ','type','cup','serie');
       if (!cDate||!cOpp) { showImportStatus('matchImportStatus','error','❌ Hittade inte Datum / Motståndare'); return; }
       const t=getTeam(); const levels=getLevels();
       let added=0,skipped=0,filtered=0;
@@ -2841,6 +2856,8 @@ function handleMatchImport(input) {
         // match level by name
         let levelId='';
         if (cLevel) { const lvName=norm(String(r[cLevel]||'')); const lv=levels.find(l=>norm(l.name)===lvName||lvName.includes(norm(l.name))); if(lv) levelId=lv.id; }
+        let categoryId='';
+        if (cCategory) { const catName=norm(String(r[cCategory]||'')); const cats=getCategories(); const cat=cats.find(c=>norm(c.name)===catName||catName.includes(norm(c.name))); if(cat) categoryId=cat.id; }
         // Parse homeAway
         let homeAway = '';
         if (cHB) {
