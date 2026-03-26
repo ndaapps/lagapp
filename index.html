@@ -1735,7 +1735,8 @@ function enterEditMode() {
 function updateLineupModeUI() {
   const t = getTeam();
   const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
-  const lc = (m?.lineup||[]).length;
+  const effective = getEffectiveLineup();
+  const lc = effective.lineup.length;
   const isComplete = lc >= 7;
   const isView = isComplete && !lineupEditMode && lineupStaging === null;
 
@@ -1743,11 +1744,51 @@ function updateLineupModeUI() {
   const editPanel = document.getElementById('lineupEditModePanel');
   const importCard = document.getElementById('importCard');
   const playerSelCard = document.getElementById('playerSelCard');
+  const selectedCard = document.getElementById('lineupSelectedCard');
 
   if (viewPanel) viewPanel.style.display = isView ? 'block' : 'none';
   if (editPanel) editPanel.style.display = isView ? 'none' : 'block';
   if (importCard) importCard.style.display = isView ? 'none' : 'block';
   if (playerSelCard) playerSelCard.style.display = isView ? 'none' : 'block';
+  if (selectedCard) selectedCard.style.display = isView ? 'block' : 'none';
+
+  if (isView && m) {
+    const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
+    const coachMap = {}; (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
+    const selPlayers = effective.lineup.map(id=>playerMap[id]).filter(Boolean);
+    const selCoaches = effective.coaches.map(id=>coachMap[id]).filter(Boolean);
+    const season = getActiveSeason();
+    const maxM = Math.max(...selPlayers.map(p=>countMatchesForPlayer(p.id,currentTeam,season)),1);
+
+    let html = selPlayers.map(p=>{
+      const cnt = countMatchesForPlayer(p.id,currentTeam,season);
+      const loadColor = maxM>0?(cnt/maxM<0.5?'var(--green-light)':cnt/maxM<0.75?'#f0a500':'var(--danger)'):'var(--green-light)';
+      const levelNames=(p.levelIds||[]).map(id=>{const lv=getLevelById(id);return lv?lv.name:'';}).filter(Boolean).join(' · ');
+      return `<div class="player-row">
+        <div class="jersey ${p.type==='loan'?'loan':''}">${p.jersey}</div>
+        <div class="player-info">
+          <div class="player-name">${p.first} ${p.last}</div>
+          <div class="player-meta">${posBadgesHTML(p.pos)}${p.type==='loan'?'<span class="badge badge-loan">Inlånad</span>':''}</div>
+          ${levelNames?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">${levelNames}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${loadColor};line-height:1;">${cnt}</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">matcher</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    if (selCoaches.length > 0) {
+      html += `<div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;padding:10px 0 6px;">Tränare</div>`;
+      html += selCoaches.map(c=>`<div class="player-row">
+        <div style="width:32px;height:32px;background:rgba(56,189,248,0.15);border:1.5px solid var(--coach);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;">🧢</div>
+        <div class="player-info"><div class="player-name">${c.first} ${c.last}</div><div class="player-meta"><span class="badge badge-coach">${c.role}</span></div></div>
+      </div>`).join('');
+    }
+
+    const el = document.getElementById('lineupSelectedList');
+    if (el) el.innerHTML = html || '<div style="color:var(--muted);font-size:13px;">Inga spelare uttagna</div>';
+  }
 }
 
 function cancelLineup() {
