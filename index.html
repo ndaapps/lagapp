@@ -340,14 +340,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
           <div id="lineupCoachList" style="display:none;"></div>
         </div>
 
-        <!-- View mode: selected players only -->
-        <div class="card" id="lineupSelectedCard" style="display:none;">
-          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="toggleSelectedList()">
-            <div class="card-title" style="margin-bottom:0;">Uttagna spelare</div>
-            <span id="selectedListToggleIcon" style="font-size:16px;color:var(--muted);">▾</span>
-          </div>
-          <div id="lineupSelectedList" style="margin-top:12px;"></div>
-        </div>
+
 
       </div>
 
@@ -1359,6 +1352,9 @@ function renderSavedLineups() {
     .slice(0, 10);
   if (withLineup.length===0) { el.innerHTML=''; el.style.display='none'; return; }
   el.style.display='block';
+  const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
+  const coachMap = {}; (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
+
   el.innerHTML = withLineup.map(({m,i})=>{
     const d = new Date(m.date);
     const lc = (m.lineup||[]).length;
@@ -1366,16 +1362,44 @@ function renderSavedLineups() {
     const lv = getLevelById(m.levelId);
     const isSelected = i === selectedMatchIdx;
     const isPast = d < today;
-    return `<div onclick="selectMatch(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;margin-bottom:6px;opacity:${isPast?'0.45':'1'};">
-      <div style="min-width:38px;text-align:center;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
-        <div style="font-size:10px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
+    const expandedKey = 'expand_'+i;
+
+    // Build player list HTML
+    const selPlayers = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
+    const selCoaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
+    const playerListHTML = [...selPlayers.map(p=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(36,59,44,0.4);">
+        <div class="jersey ${p.type==='loan'?'loan':''}" style="width:26px;height:26px;font-size:12px;">${p.jersey}</div>
+        <div style="flex:1;font-size:13px;font-weight:600;">${p.first} ${p.last}</div>
+        <div>${posShortHTML(p.pos)}</div>
+      </div>`),
+      ...selCoaches.map(c=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(36,59,44,0.4);">
+        <div style="width:26px;height:26px;background:rgba(56,189,248,0.15);border:1px solid var(--coach);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;">🧢</div>
+        <div style="flex:1;font-size:13px;font-weight:600;">${c.first} ${c.last}</div>
+        <div style="font-size:11px;color:var(--muted);">${c.role}</div>
+      </div>`)
+    ].join('');
+
+    return `<div style="margin-bottom:8px;border-radius:10px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};overflow:hidden;opacity:${isPast?'0.55':'1'};">
+      <div onclick="toggleSavedLineup(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;">
+        <div style="min-width:38px;text-align:center;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
+          <div style="font-size:10px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
+          <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare${isPast?' · Spelad':''}</div>
+        </div>
+        <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:${isComplete?'rgba(61,186,116,0.15)':'rgba(245,197,24,0.12)'};color:${isComplete?'#3dba74':'#f5c518'};">${isComplete?'✓':lc+'/'+fmtCount}</span>
+        <span style="font-size:14px;color:var(--muted);margin-left:2px;" id="sl-icon-${i}">▾</span>
       </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
-        <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare${isPast?' · Spelad':''}</div>
+      <div id="sl-list-${i}" style="background:var(--surface);padding:0 10px;display:none;">
+        ${playerListHTML}
+        <div style="padding:8px 0;display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="event.stopPropagation();selectMatch(${i})">✏️ Redigera</button>
+        </div>
       </div>
-      <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:${isComplete?'rgba(61,186,116,0.15)':'rgba(245,197,24,0.12)'};color:${isComplete?'#3dba74':'#f5c518'};">${isComplete?'✓ Klar':lc+'/'+fmtCount}</span>
     </div>`;
   }).join('');
 }
@@ -1734,15 +1758,13 @@ function saveLineup() {
   resetLineupView();
 }
 
-let selectedListExpanded = true;
-function toggleSelectedList() {
-  selectedListExpanded = !selectedListExpanded;
-  const el = document.getElementById('lineupSelectedList');
-  const icon = document.getElementById('selectedListToggleIcon');
-  if (el) el.style.display = selectedListExpanded ? 'block' : 'none';
-  if (icon) icon.textContent = selectedListExpanded ? '▾' : '▸';
-  // prevent updateLineupModeUI from overriding display
-  el._manualToggle = true;
+function toggleSavedLineup(idx) {
+  const list = document.getElementById('sl-list-'+idx);
+  const icon = document.getElementById('sl-icon-'+idx);
+  if (!list) return;
+  const open = list.style.display !== 'none';
+  list.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '▾' : '▴';
 }
 
 function enterEditMode() {
@@ -1764,14 +1786,12 @@ function updateLineupModeUI() {
   const editPanel = document.getElementById('lineupEditModePanel');
   const importCard = document.getElementById('importCard');
   const playerSelCard = document.getElementById('playerSelCard');
-  const selectedCard = document.getElementById('lineupSelectedCard');
+  const selectedCard = null; // removed — now inline in savedLineupsBar
 
   if (viewPanel) viewPanel.style.display = isView ? 'block' : 'none';
   if (editPanel) editPanel.style.display = isView ? 'none' : 'block';
   if (importCard) importCard.style.display = isView ? 'none' : 'block';
   if (playerSelCard) playerSelCard.style.display = isView ? 'none' : 'block';
-  if (selectedCard) selectedCard.style.display = isView ? 'block' : 'none';
-
   if (isView && m) {
     const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
     const coachMap = {}; (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
@@ -1806,19 +1826,7 @@ function updateLineupModeUI() {
       </div>`).join('');
     }
 
-    const el = document.getElementById('lineupSelectedList');
-    if (el) {
-      el.innerHTML = html || '<div style="color:var(--muted);font-size:13px;">Inga spelare uttagna</div>';
-      // Respect collapse state
-      if (!el._manualToggle) {
-        el.style.display = 'block';
-        selectedListExpanded = true;
-        const icon = document.getElementById('selectedListToggleIcon');
-        if (icon) icon.textContent = '▾';
-      } else {
-        el.style.display = selectedListExpanded ? 'block' : 'none';
-      }
-    }
+    // Player list now shown inline in savedLineupsBar
   }
 }
 
