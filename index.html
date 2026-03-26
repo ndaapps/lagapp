@@ -277,17 +277,23 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
               </div>
               <div id="lineupLevelBadge"></div>
             </div>
-            <div class="form-row">
-              <div class="form-group"><label>Samling kl.</label><input class="form-control" type="time" id="matchTime" value="09:30"></div>
-              <div class="form-group"><label>Plats</label><input class="form-control" id="matchVenue" placeholder="Hemmaplan"></div>
+            <!-- View mode (complete lineup saved) -->
+            <div id="lineupViewMode" style="display:none;">
+              <button class="btn btn-ghost btn-full" onclick="enterEditMode()">✏️ Redigera uttagning</button>
             </div>
-            <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
-              <button class="btn btn-wa btn-full" onclick="openWhatsApp()">📱 Skicka till WhatsApp</button>
-              <div style="display:flex;gap:8px;">
-                <button class="btn btn-ghost" style="flex:1;" id="cancelLineupBtn" onclick="cancelLineup()">Avbryt ändringar</button>
-                <button class="btn btn-green" style="flex:2;" id="saveLineupBtn" onclick="saveLineup()">💾 Spara uttagning</button>
+            <!-- Edit mode -->
+            <div id="lineupEditModePanel">
+              <div class="form-row">
+                <div class="form-group"><label>Samling kl.</label><input class="form-control" type="time" id="matchTime" value="09:30"></div>
+                <div class="form-group"><label>Plats</label><input class="form-control" id="matchVenue" placeholder="Hemmaplan"></div>
               </div>
-              <button class="btn btn-danger btn-full" id="clearLineupBtn" onclick="clearLineup()">🗑 Rensa uttagning</button>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+                <div style="display:flex;gap:8px;">
+                  <button class="btn btn-ghost" style="flex:1;" id="cancelLineupBtn" onclick="cancelLineup()">Avbryt</button>
+                  <button class="btn btn-green" style="flex:2;" id="saveLineupBtn" onclick="saveLineup()">💾 Spara</button>
+                </div>
+                <button class="btn btn-danger btn-full" id="clearLineupBtn" onclick="clearLineup()">🗑 Rensa uttagning</button>
+              </div>
             </div>
           </div>
           <div id="matchInfoEmpty" style="text-align:center;padding:10px 0;color:var(--muted);font-size:13px;">
@@ -296,7 +302,10 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
         </div>
         <!-- Saved lineups summary -->
         <div id="savedLineupsBar" style="display:none;margin-bottom:4px;">
-          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-bottom:8px;">Sparade uttagningar</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:700;">Sparade uttagningar</div>
+            <button class="btn btn-wa btn-sm" onclick="openWhatsApp()">📱 WhatsApp</button>
+          </div>
         </div>
 
         <!-- Availability import -->
@@ -312,7 +321,16 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
         <!-- Player selection -->
         <div class="card" id="playerSelCard" style="display:none;">
           <div class="card-title">Välj spelare & tränare</div>
-          <div id="lineupFilterBar" style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+          <div id="lineupFilterBar" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+            <span style="font-size:11px;color:var(--muted);font-weight:600;">Sortera:</span>
+            <select id="lineupSortSelect" class="form-control" style="flex:1;padding:5px 8px;font-size:12px;" onchange="setLineupSort(this.value)">
+              <option value="jersey">Tröjnummer</option>
+              <option value="first">Förnamn</option>
+              <option value="last">Efternamn</option>
+              <option value="pos">Position</option>
+            </select>
+          </div>
           <div class="tabs" id="lineupTabs">
             <button class="tab active" onclick="switchLineupTab('players')">Spelare</button>
             <button class="tab" onclick="switchLineupTab('coaches')">Tränare</button>
@@ -1240,6 +1258,8 @@ function savePlayerLevels() {
 
 let profilePlayerId = null;
 let lineupLevelFilter = null;
+let lineupSortBy = 'jersey'; // jersey | first | last | pos
+let lineupEditMode = false; // true = show all players, false = show only selected if complete
 let playerLevelFilter = null;   // null = all levels
 let playerSortBy = 'jersey';    // jersey | first | last | pos
 let lineupAvailFilter = false; // true=only show available
@@ -1321,8 +1341,14 @@ function renderSavedLineups() {
   const withLineup = (t.matches||[])
     .map((m,i)=>({m,i}))
     .filter(({m})=>(m.lineup||[]).length > 0)
-    .sort((a,b)=>new Date(b.m.date)-new Date(a.m.date))
-    .slice(0, 8);
+    .sort((a,b)=>{
+      const aDate = new Date(a.m.date); const bDate = new Date(b.m.date);
+      const aFut = aDate >= today; const bFut = bDate >= today;
+      if (aFut && !bFut) return -1;
+      if (!aFut && bFut) return 1;
+      return aFut ? aDate-bDate : bDate-aDate; // upcoming: earliest first, past: latest first
+    })
+    .slice(0, 10);
   if (withLineup.length===0) { el.innerHTML=''; el.style.display='none'; return; }
   el.style.display='block';
   el.innerHTML = withLineup.map(({m,i})=>{
@@ -1331,14 +1357,15 @@ function renderSavedLineups() {
     const isComplete = lc >= fmtCount;
     const lv = getLevelById(m.levelId);
     const isSelected = i === selectedMatchIdx;
-    return `<div onclick="selectMatch(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;margin-bottom:6px;">
+    const isPast = d < today;
+    return `<div onclick="selectMatch(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;margin-bottom:6px;opacity:${isPast?'0.45':'1'};">
       <div style="min-width:38px;text-align:center;">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
         <div style="font-size:10px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
-        <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare</div>
+        <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare${isPast?' · Spelad':''}</div>
       </div>
       <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:${isComplete?'rgba(61,186,116,0.15)':'rgba(245,197,24,0.12)'};color:${isComplete?'#3dba74':'#f5c518'};">${isComplete?'✓ Klar':lc+'/'+fmtCount}</span>
     </div>`;
@@ -1367,8 +1394,7 @@ function showMatchInfoBar(idx) {
   document.getElementById('matchTime').value = m.gather||m.time||'09:30';
   document.getElementById('matchInfoDisplay').style.display = 'block';
   document.getElementById('matchInfoEmpty').style.display = 'none';
-  document.getElementById('importCard').style.display = 'block';
-  document.getElementById('playerSelCard').style.display = 'block';
+  updateLineupModeUI();
 }
 
 function hideMatchUI() {
@@ -1395,6 +1421,7 @@ function renderLineup() {
 
   renderLineupPlayerList(sel, playerMap, fmtCount, m, hasUnsaved);
   renderLineupCoachList(selCoaches);
+  updateLineupModeUI();
 }
 
 // ── Filter bar ──────────────────────────────────────────────────────────────
@@ -1434,6 +1461,26 @@ function setLineupFilter(val) {
   // removed
 }
 
+function setLineupSort(val) {
+  lineupSortBy = val;
+  const sel = document.getElementById('lineupSortSelect');
+  if (sel) sel.value = val;
+  renderLineup();
+}
+
+function sortLineupPlayers(arr) {
+  return [...arr].sort((a,b) => {
+    if (lineupSortBy==='first') return a.first.localeCompare(b.first,'sv');
+    if (lineupSortBy==='last')  return a.last.localeCompare(b.last,'sv');
+    if (lineupSortBy==='pos') {
+      const pa = Array.isArray(a.pos)?a.pos[0]:a.pos||'';
+      const pb = Array.isArray(b.pos)?b.pos[0]:b.pos||'';
+      return pa.localeCompare(pb,'sv');
+    }
+    return (a.jersey||0)-(b.jersey||0);
+  });
+}
+
 // ── Player list ──────────────────────────────────────────────────────────────
 function renderLineupPlayerList(sel, playerMap, fmtCount, m, hasUnsaved) {
   hasUnsaved = hasUnsaved || false;
@@ -1447,8 +1494,8 @@ function renderLineupPlayerList(sel, playerMap, fmtCount, m, hasUnsaved) {
   const hasAvail = availIds !== null && availIds.length > 0;
 
   // Start with full squad/loans
-  let squad = (t.players||[]).filter(p=>p.type==='squad').sort((a,b)=>a.jersey-b.jersey);
-  let loans  = (t.players||[]).filter(p=>p.type==='loan');
+  let squad = sortLineupPlayers((t.players||[]).filter(p=>p.type==='squad'));
+  let loans  = sortLineupPlayers((t.players||[]).filter(p=>p.type==='loan'));
 
   // Apply level filter
   if (lineupLevelFilter) {
@@ -1672,15 +1719,55 @@ function saveLineup() {
   save();
   const btn = document.getElementById('saveLineupBtn');
   if (btn) { const orig=btn.innerHTML; btn.innerHTML='✅ Sparad!'; btn.style.background='var(--green-light)'; setTimeout(()=>{btn.innerHTML=orig;btn.style.background='';},2500); }
+  lineupEditMode = false;
   renderSavedLineups();
   populateMatchDropdown();
   showToast(`✅ Uttagning sparad mot ${m.opp}`);
+  resetLineupView();
+}
+
+function enterEditMode() {
+  lineupEditMode = true;
+  renderLineup();
+  updateLineupModeUI();
+}
+
+function updateLineupModeUI() {
+  const t = getTeam();
+  const m = selectedMatchIdx>=0?(t.matches||[])[selectedMatchIdx]:null;
+  const lc = (m?.lineup||[]).length;
+  const isComplete = lc >= 7;
+  const isView = isComplete && !lineupEditMode && lineupStaging === null;
+
+  const viewPanel = document.getElementById('lineupViewMode');
+  const editPanel = document.getElementById('lineupEditModePanel');
+  const importCard = document.getElementById('importCard');
+  const playerSelCard = document.getElementById('playerSelCard');
+
+  if (viewPanel) viewPanel.style.display = isView ? 'block' : 'none';
+  if (editPanel) editPanel.style.display = isView ? 'none' : 'block';
+  if (importCard) importCard.style.display = isView ? 'none' : 'block';
+  if (playerSelCard) playerSelCard.style.display = isView ? 'none' : 'block';
 }
 
 function cancelLineup() {
   lineupStaging = null;
-  renderLineup();
+  resetLineupView();
   showToast('Ändringar avbrutna');
+}
+
+function resetLineupView() {
+  selectedMatchIdx = -1;
+  lineupStaging = null;
+  lineupLevelFilter = null;
+  lineupAvailFilter = false;
+  lineupSortBy = 'jersey';
+  lineupEditMode = false;
+  // Reset dropdown
+  const dd = document.getElementById('matchDropdown');
+  if (dd) dd.value = '';
+  hideMatchUI();
+  renderSavedLineups();
 }
 
 function clearLineup() {
