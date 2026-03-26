@@ -372,6 +372,9 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
             <div class="form-group"><label>Kategori</label><select class="form-control" id="newMatchCategory"><option value="">– Ingen –</option></select></div>
           </div>
           <div class="form-row">
+            <div class="form-group"><label>Säsong</label><select class="form-control" id="newMatchSeason"><option value="">– Ingen –</option></select></div>
+          </div>
+          <div class="form-row">
             <div class="form-group"><label>Arena/plats</label><input class="form-control" id="newMatchVenue" placeholder="t.ex. Ängsvallen"></div>
             <div class="form-group"><label>Resultat</label><input class="form-control" id="newMatchResult" placeholder="2–1"></div>
           </div>
@@ -791,6 +794,7 @@ async function loadFromSupabase() {
         levels: t.levels||[],
         seasons: t.seasons||[],
         activeSeason: t.active_season,
+        categories: t.categories||[],
         players: [],
         coaches: [],
         matches: [],
@@ -880,7 +884,7 @@ async function syncToSupabase() {
     // 1. Upsert team
     const { error: tErr } = await _supa.from('teams').upsert({
       id: tid, name: t.name, format: t.format, formation: t.formation,
-      levels: t.levels||[], seasons: t.seasons||[], active_season: t.activeSeason||null
+      levels: t.levels||[], seasons: t.seasons||[], active_season: t.activeSeason||null, categories: t.categories||[]
     });
     if (tErr) throw tErr;
 
@@ -1158,7 +1162,13 @@ function renderLevelStats(t) {
   const levels = getLevels();
   const today = new Date(); today.setHours(0,0,0,0);
   const season = getActiveSeason();
-  const matches = (t.matches||[]).filter(m => !season || m.seasonId === season);
+  // If season is active, filter — but fall back to all matches if few results
+  let matches = (t.matches||[]);
+  if (season) {
+    const seasonMatches = matches.filter(m => m.seasonId === season);
+    // Only filter if matches actually have seasonId set
+    if (seasonMatches.length > 0) matches = seasonMatches;
+  }
 
   if (levels.length === 0) { el.innerHTML = ''; return; }
 
@@ -2141,8 +2151,9 @@ function addMatch() {
   const gather     = document.getElementById('newMatchGather').value;
   const venue      = document.getElementById('newMatchVenue').value.trim();
   const categoryId = document.getElementById('newMatchCategory')?.value || '';
+  const seasonId   = document.getElementById('newMatchSeason')?.value || getActiveSeason() || '';
   const homeAway = getHomeAway();
-  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, categoryId, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
+  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, categoryId, seasonId, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
   save();
   ['newMatchOpp','newMatchResult','newMatchVenue'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('input[name="newMatchHB"]').forEach(r=>r.checked=false);
@@ -2445,6 +2456,13 @@ function populateNewMatchCategory() {
     if (!sel) return;
     sel.innerHTML = '<option value="">– Ingen –</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   });
+  // Populate season dropdown with active season as default
+  const seasons = getTeam()?.seasons||[];
+  const activeSeason = getActiveSeason();
+  const seasonSel = document.getElementById('newMatchSeason');
+  if (seasonSel) {
+    seasonSel.innerHTML = '<option value="">– Ingen –</option>' + seasons.map(s=>`<option value="${s.id}" ${s.id===activeSeason?'selected':''}>${s.name}</option>`).join('');
+  }
 }
 
 function addLevel() {
@@ -2866,7 +2884,8 @@ function handleMatchImport(input) {
           else if (hbRaw.includes('borta')||hbRaw==='b'||hbRaw==='away') homeAway='borta';
         }
         t.matches.push({
-          id: 'm'+Date.now()+Math.random(), date: dateStr, opp, levelId,
+          id: 'm'+Date.now()+Math.random(), date: dateStr, opp, levelId, categoryId,
+          seasonId: getActiveSeason()||'',
           result:   cResult  ? String(r[cResult]||'').trim()  : '',
           venue:    cVenue   ? String(r[cVenue]||'').trim()   : '',
           kickoff:  cKickoff ? parseExcelTime(r[cKickoff]) : '',
