@@ -1556,35 +1556,24 @@ function renderSavedLineups() {
   const fmtCount = t.format || 11;
   const el = document.getElementById('savedLineupsBar');
   if (!el) return;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const withLineup = (t.matches||[])
-    .map((m,i)=>({m,i}))
-    .filter(({m})=>(m.lineup||[]).length > 0)
-    .sort((a,b)=>{
-      const aDate = new Date(a.m.date); const bDate = new Date(b.m.date);
-      const aFut = aDate >= today; const bFut = bDate >= today;
-      if (aFut && !bFut) return -1;
-      if (!aFut && bFut) return 1;
-      return aFut ? aDate-bDate : bDate-aDate; // upcoming: earliest first, past: latest first
-    })
-    .slice(0, 10);
+
+  const withLineup = (t.matches||[]).map((m,i)=>({m,i})).filter(({m})=>(m.lineup||[]).length > 0);
   if (withLineup.length===0) { el.style.display='none'; const ll=document.getElementById('savedLineupsList'); if(ll) ll.innerHTML=''; return; }
   el.style.display='block';
+
+  const upcoming = withLineup.filter(({m})=>!isMatchPast(m)).sort((a,b)=>new Date(a.m.date)-new Date(b.m.date));
+  const past     = withLineup.filter(({m})=>isMatchPast(m)).sort((a,b)=>new Date(b.m.date)-new Date(a.m.date)).slice(0,8);
+
   const playerMap = {}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
   const coachMap = {}; (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
 
-  const listEl = document.getElementById('savedLineupsList');
-  if (!listEl) return;
-  listEl.innerHTML = withLineup.map(({m,i})=>{
+  const buildCard = ({m,i}) => {
     const d = new Date(m.date);
     const lc = (m.lineup||[]).length;
     const isComplete = lc >= fmtCount;
     const lv = getLevelById(m.levelId);
     const isSelected = i === selectedMatchIdx;
-    const isPast = d < today;
-    const expandedKey = 'expand_'+i;
-
-    // Build player list HTML
+    const isPast = isMatchPast(m);
     const selPlayers = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
     const selCoaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
     const playerListHTML = [...selPlayers.map(p=>`
@@ -1600,8 +1589,7 @@ function renderSavedLineups() {
         <div style="font-size:11px;color:var(--muted);">${c.role}</div>
       </div>`)
     ].join('');
-
-    return `<div style="margin-bottom:8px;border-radius:10px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};overflow:hidden;opacity:${isPast?'0.55':'1'};">
+    return `<div style="margin-bottom:6px;border-radius:10px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};overflow:hidden;opacity:${isPast?'0.6':'1'};">
       <div onclick="toggleSavedLineup(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;">
         <div style="min-width:38px;text-align:center;">
           <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
@@ -1609,7 +1597,7 @@ function renderSavedLineups() {
         </div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
-          <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare${isPast?' · Spelad':''}</div>
+          <div style="font-size:11px;color:var(--muted);">${lv?lv.name+' · ':''}${lc} spelare${m.result?' · '+m.result:''}</div>
         </div>
         <span style="font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:${isComplete?'rgba(61,186,116,0.15)':'rgba(245,197,24,0.12)'};color:${isComplete?'#3dba74':'#f5c518'};">${isComplete?'✓':lc+'/'+fmtCount}</span>
         <span style="font-size:14px;color:var(--muted);margin-left:2px;" id="sl-icon-${i}">▾</span>
@@ -1621,7 +1609,41 @@ function renderSavedLineups() {
         </div>
       </div>
     </div>`;
-  }).join('');
+  };
+
+  const listEl = document.getElementById('savedLineupsList');
+  if (!listEl) return;
+
+  let html = '';
+
+  if (upcoming.length > 0) {
+    html += `<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Kommande</div>`;
+    html += upcoming.map(buildCard).join('');
+  }
+
+  if (past.length > 0) {
+    const pastCollapsedId = 'pastLineupsCollapsed';
+    html += `<div style="margin-top:${upcoming.length?'10px':'0'};">
+      <div onclick="togglePastLineups()" style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;">Spelade (${past.length})</div>
+        <span id="past-lineups-icon" style="font-size:12px;color:var(--muted);">▾</span>
+      </div>
+      <div id="${pastCollapsedId}" style="display:none;">
+        ${past.map(buildCard).join('')}
+      </div>
+    </div>`;
+  }
+
+  listEl.innerHTML = html;
+}
+
+function togglePastLineups() {
+  const el = document.getElementById('pastLineupsCollapsed');
+  const icon = document.getElementById('past-lineups-icon');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '▾' : '▴';
 }
 
 function selectMatch(val) {
