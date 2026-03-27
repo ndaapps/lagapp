@@ -941,7 +941,7 @@ async function syncToSupabase() {
     const { error: mdErr } = await _supa.from('matches').delete().eq('team_id', tid);
     if (mdErr) throw mdErr;
     if (matches.length > 0) {
-      const { error: miErr } = await _supa.from('matches').insert(matches);
+      const { error: miErr } = await _supa.from('matches').upsert(matches, {onConflict: 'id'});
       if (miErr) throw miErr;
     }
 
