@@ -906,12 +906,17 @@ async function syncToSupabase() {
       jersey: p.jersey||0, pos: p.pos||[], type: p.type||'squad', level_ids: p.levelIds||[]
     }));
     players.forEach((row, idx) => { t.players[idx].id = row.id; });
-
-    const { error: pdErr } = await _supa.from('players').delete().eq('team_id', tid);
-    if (pdErr) throw pdErr;
+    // Upsert players — no delete needed
     if (players.length > 0) {
-      const { error: piErr } = await _supa.from('players').insert(players);
+      const { error: piErr } = await _supa.from('players').upsert(players, {onConflict: 'id'});
       if (piErr) throw piErr;
+    }
+    // Remove players no longer in team
+    const playerIds = players.map(p => p.id);
+    if (playerIds.length > 0) {
+      await _supa.from('players').delete().eq('team_id', tid).not('id', 'in', `(${playerIds.join(',')})`);
+    } else {
+      await _supa.from('players').delete().eq('team_id', tid);
     }
 
     // 3. Coaches
@@ -920,11 +925,10 @@ async function syncToSupabase() {
       team_id: tid, first: c.first, last: c.last, role: c.role||'Lagledare'
     }));
     coaches.forEach((row, idx) => { t.coaches[idx].id = row.id; });
-
     const { error: cdErr } = await _supa.from('coaches').delete().eq('team_id', tid);
     if (cdErr) throw cdErr;
     if (coaches.length > 0) {
-      const { error: ciErr } = await _supa.from('coaches').insert(coaches);
+      const { error: ciErr } = await _supa.from('coaches').upsert(coaches, {onConflict: 'id'});
       if (ciErr) throw ciErr;
     }
 
@@ -938,8 +942,7 @@ async function syncToSupabase() {
       available_ids: m.availableIds||[], season_id: m.seasonId||'', team_group: m.teamGroup||''
     }));
 
-    const { error: mdErr } = await _supa.from('matches').delete().eq('team_id', tid);
-    if (mdErr) throw mdErr;
+    // 4. Matches — upsert only, no delete (avoids race condition)
     if (matches.length > 0) {
       const { error: miErr } = await _supa.from('matches').upsert(matches, {onConflict: 'id'});
       if (miErr) throw miErr;
