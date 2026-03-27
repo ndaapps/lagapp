@@ -935,7 +935,7 @@ async function syncToSupabase() {
       result: m.result||'', venue: m.venue||'', home_away: m.homeAway||'',
       kickoff: m.kickoff||'', gather: m.gather||'', duration: m.duration||0,
       lineup: m.lineup||[], coaches: m.coaches||[],
-      available_ids: m.availableIds||[], season_id: m.seasonId||''
+      available_ids: m.availableIds||[], season_id: m.seasonId||'', team_group: m.teamGroup||''
     }));
 
     const { error: mdErr } = await _supa.from('matches').delete().eq('team_id', tid);
