@@ -2318,41 +2318,6 @@ function saveResultDirect(idx) {
 }
 
 function saveResultFromFields(idx) { saveResultDirect(idx); }
-  // Find the two inputs for this row
-  const rows = document.querySelectorAll('#resultsList [type="number"]');
-  // Each match has 2 inputs — find the pair for this idx
-  // We use data-idx on the parent div to identify
-  const allDivs = document.querySelectorAll('#resultsList > div > div');
-  // Simpler: re-read all rows and find by position
-  const matchDivs = document.querySelectorAll('#resultsList input[type="number"]');
-  // Group by pairs
-  const pairs = [];
-  for (let i=0; i<matchDivs.length; i+=2) pairs.push([matchDivs[i], matchDivs[i+1]]);
-
-  // Find which pair belongs to this idx by traversal order
-  // Since renderResults renders in order, find the idx-th match in pastMatches order
-  const t = getTeam();
-  const today = new Date(); today.setHours(0,0,0,0);
-  const pastMatches = (t.matches||[]).map((m,i)=>({m,i})).filter(({m})=>isMatchPast(m))
-    .sort((a,b)=>{const dd=new Date(b.m.date)-new Date(a.m.date); return dd!==0?dd:(b.m.kickoff||'').localeCompare(a.m.kickoff||'');});
-  const pos = pastMatches.findIndex(({i})=>i===idx);
-  if (pos < 0 || pos >= pairs.length) return;
-
-  const gf = pairs[pos][0].value;
-  const ga = pairs[pos][1].value;
-
-  // Both must be filled
-  if (gf === '' || ga === '') return;
-
-  const m = (t.matches||[])[idx];
-  if (!m) return;
-  m.result = `${gf}–${ga}`;
-  save();
-  renderResults();   // re-renders without this match (it now has result)
-  renderMatchColumns();
-  renderOverview();
-  showToast(`✅ ${m.opp} ${m.result}`);
-}
 
 // ═══════════════════════════════════════════════════════
 // MATCHES PAGE
