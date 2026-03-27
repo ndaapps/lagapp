@@ -379,6 +379,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
           </div>
           <div class="form-row">
             <div class="form-group"><label>Säsong</label><select class="form-control" id="newMatchSeason"><option value="">– Ingen –</option></select></div>
+            <div class="form-group"><label>Lag/grupp</label><input class="form-control" id="newMatchTeamGroup" placeholder="t.ex. Lag Vit"></div>
           </div>
           <div class="form-row">
             <div class="form-group"><label>Arena/plats</label><input class="form-control" id="newMatchVenue" placeholder="t.ex. Ängsvallen"></div>
@@ -828,7 +829,7 @@ async function loadFromSupabase() {
     (mRes.data||[]).forEach(m => {
       if (!teams[m.team_id]) return;
       teams[m.team_id].matches.push({
-        id: m.id, date: m.date, opp: m.opp, levelId: m.level_id, categoryId: m.category_id||'',
+        id: m.id, date: m.date, opp: m.opp, levelId: m.level_id, categoryId: m.category_id||'', teamGroup: m.team_group||'',
         result: m.result, venue: m.venue, homeAway: m.home_away,
         kickoff: m.kickoff, gather: m.gather, duration: m.duration,
         lineup: m.lineup||[], coaches: m.coaches||[],
@@ -958,6 +959,7 @@ function getCategories() { return getTeam()?.categories || []; }
 function getCategoryById(id) { return getCategories().find(c=>c.id===id); }
 function getCategoryColor(catId) { const idx = getCategories().findIndex(c=>c.id===catId); return CAT_COLORS[idx % CAT_COLORS.length] || CAT_COLORS[0]; }
 function categoryBadgeHTML(catId) { if (!catId) return ''; const cat=getCategoryById(catId); if (!cat) return ''; const c=getCategoryColor(catId); return `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c.bg};color:${c.color};">${cat.name}</span>`; }
+function teamGroupBadgeHTML(tg) { if (!tg) return ''; const isLight = tg.toLowerCase().includes('vit')||tg.toLowerCase().includes('white'); return `<span style="font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:${isLight?'#f0f0f0':'#1a1a1a'};color:${isLight?'#222':'#e8e8e8'};border:1px solid ${isLight?'#ccc':'#444'};">${tg}</span>`; }
 function getLevelColor(levelId) { const idx = getLevels().findIndex(l=>l.id===levelId); return LEVEL_COLORS[idx % LEVEL_COLORS.length] || LEVEL_COLORS[0]; }
 function levelBadgeHTML(levelId) { if (!levelId) return ''; const lv = getLevelById(levelId); if (!lv) return ''; const c = getLevelColor(levelId); return `<span class="lvl-badge" style="background:${c.bg};color:${c.color};">${lv.name}</span>`; }
 function getActiveSeason() { return getTeam()?.activeSeason || null; }
@@ -2144,8 +2146,9 @@ function addMatch() {
   const venue      = document.getElementById('newMatchVenue').value.trim();
   const categoryId = document.getElementById('newMatchCategory')?.value || '';
   const seasonId   = document.getElementById('newMatchSeason')?.value || getActiveSeason() || '';
+  const teamGroup  = document.getElementById('newMatchTeamGroup')?.value.trim() || '';
   const homeAway = getHomeAway();
-  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, categoryId, seasonId, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
+  t.matches.push({ id:'m'+Date.now(), date, opp, levelId, categoryId, seasonId, teamGroup, result, venue, homeAway, kickoff, duration, gather, lineup:[], coaches:[], loanIds:[] });
   save();
   ['newMatchOpp','newMatchResult','newMatchVenue'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   document.querySelectorAll('input[name="newMatchHB"]').forEach(r=>r.checked=false);
@@ -2267,6 +2270,7 @@ function matchCardHTML(m, i, isPast) {
         <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</span>
         ${levelBadgeHTML(m.levelId)}
         ${categoryBadgeHTML(m.categoryId)}
+        ${teamGroupBadgeHTML(m.teamGroup)}
         ${lineupTag}
       </div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);flex-shrink:0;">${m.result||'–'}</div>
@@ -2302,6 +2306,7 @@ function openMatchDetail(idx) {
   document.getElementById('mdKickoff').value = m.kickoff||'';
   document.getElementById('mdGather').value = m.gather||m.time||'';
   document.getElementById('mdHomeAway').value = m.homeAway||'';
+  const mdTg = document.getElementById('mdTeamGroup'); if (mdTg) mdTg.value = m.teamGroup||'';
   // Parse goals from result string
   const rMatch = (m.result||'').match(/^(\d+)[^\d]+(\d+)$/);
   document.getElementById('mdGoalsFor').value = rMatch?rMatch[1]:'';
@@ -2339,6 +2344,7 @@ function saveMatchDetail() {
   m.levelId    = document.getElementById('mdLevelSelect')?.value || m.levelId || '';
   m.categoryId = document.getElementById('mdCategory')?.value || '';
   m.seasonId   = document.getElementById('mdSeason')?.value || '';
+  m.teamGroup  = document.getElementById('mdTeamGroup')?.value.trim() || '';
   save(); closeSheet('matchDetailSheet'); renderMatchColumns();
   showToast('Match uppdaterad');
 }
@@ -2858,7 +2864,8 @@ function handleMatchImport(input) {
       const cResult  = find('resultat','result','score');
       const cTeam    = find('lagnamn','lag','team');
       const cLevel    = find('nivå','level','niva');
-      const cCategory = find('kategori','category','typ','type','cup','serie');
+      const cCategory  = find('kategori','category','typ','type','cup','serie');
+      const cTeamGroup = find('lag/grupp','laggrupp','team group','teamgroup','grupp','group','lag ');
       if (!cDate||!cOpp) { showImportStatus('matchImportStatus','error','❌ Hittade inte Datum / Motståndare'); return; }
       const t=getTeam(); const levels=getLevels();
       let added=0,skipped=0,filtered=0;
@@ -2885,6 +2892,7 @@ function handleMatchImport(input) {
         t.matches.push({
           id: 'm'+Date.now()+Math.random(), date: dateStr, opp, levelId, categoryId,
           seasonId: getActiveSeason()||'',
+          teamGroup: cTeamGroup ? String(r[cTeamGroup]||'').trim() : '',
           result:   cResult  ? String(r[cResult]||'').trim()  : '',
           venue:    cVenue   ? String(r[cVenue]||'').trim()   : '',
           kickoff:  cKickoff ? parseExcelTime(r[cKickoff]) : '',
