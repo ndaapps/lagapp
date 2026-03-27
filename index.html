@@ -873,7 +873,8 @@ async function loadFromSupabase() {
     buildDesktopNav();
     updateAllDropdowns();
     setDefaultDate('newMatchDate');
-    renderOverview();
+    const savedPage = sessionStorage.getItem('lagapp_page') || 'overview';
+    showPage(savedPage);
     updateResultsBadge();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -893,7 +894,8 @@ async function loadFromSupabase() {
     buildDesktopNav();
     updateAllDropdowns();
     setDefaultDate('newMatchDate');
-    renderOverview();
+    const savedPageFb = sessionStorage.getItem('lagapp_page') || 'overview';
+    showPage(savedPageFb);
     updateResultsBadge();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -1006,6 +1008,7 @@ function showPage(p) {
   document.getElementById('nav-'+p)?.classList.add('active');
   document.getElementById('dn-'+p)?.classList.add('active');
   currentPage = p;
+  try { sessionStorage.setItem('lagapp_page', p); } catch(e) {}
   document.getElementById('fab').classList.add('hidden');
   updateAllDropdowns();
   if (p==='overview') renderOverview();
@@ -1302,7 +1305,7 @@ function renderLevelStats(t) {
       if (lvCats.length > 0) {
         catRowsHTML = lvCats.map(cat => {
           const cc = getCategoryColor(cat.id);
-          const catPlayed = lvMatches.filter(m => m.categoryId === cat.id && m.result && new Date(m.date+'T00:00:00') < today);
+          const catPlayed = lvMatches.filter(m => m.categoryId === cat.id && m.result && isMatchPast(m));
           return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
             <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
               <span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:${cc.bg};color:${cc.color};">${cat.name}</span>
@@ -1312,7 +1315,7 @@ function renderLevelStats(t) {
         }).join('');
       } else {
         // No categories — show total stats
-        const allPlayed = lvMatches.filter(m => m.result && new Date(m.date+'T00:00:00') < today);
+        const allPlayed = lvMatches.filter(m => m.result && isMatchPast(m));
         catRowsHTML = statsRow(allPlayed);
       }
 
