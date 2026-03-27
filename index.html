@@ -874,6 +874,7 @@ async function loadFromSupabase() {
     updateAllDropdowns();
     setDefaultDate('newMatchDate');
     renderOverview();
+    updateResultsBadge();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
 
@@ -893,6 +894,7 @@ async function loadFromSupabase() {
     updateAllDropdowns();
     setDefaultDate('newMatchDate');
     renderOverview();
+    updateResultsBadge();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     showToast('⚠️ Offline-läge – ändringar sparas lokalt');
