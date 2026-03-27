@@ -193,6 +193,10 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
   <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:4px;color:#f5c518;">⚽ LAGAPP</div>
   <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;">
     <input type="password" id="loginPassword" placeholder="Lösenord" style="width:100%;background:#182a1e;border:1.5px solid #243b2c;color:#e4efe7;padding:12px 16px;border-radius:10px;font-size:16px;font-family:Outfit,sans-serif;outline:none;" onkeydown="if(event.key==='Enter')checkLogin()">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;align-self:flex-start;">
+      <input type="checkbox" id="rememberMe" style="width:16px;height:16px;cursor:pointer;accent-color:#f5c518;">
+      <span style="font-size:13px;color:#6a9478;">Kom ihåg mig</span>
+    </label>
     <button onclick="checkLogin()" style="width:100%;background:#f5c518;color:#111;border:none;padding:12px;border-radius:10px;font-size:16px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;">Logga in</button>
     <div id="loginError" style="display:none;color:#e74c3c;font-size:13px;text-align:center;">Fel lösenord, försök igen.</div>
   </div>
@@ -760,6 +764,12 @@ async function checkLogin() {
     if (error) throw error;
     if (pw === (data?.value||'')) {
       sessionStorage.setItem('lagapp_auth', '1');
+      const remember = document.getElementById('rememberMe')?.checked;
+      if (remember) {
+        localStorage.setItem('lagapp_remember', '1');
+      } else {
+        localStorage.removeItem('lagapp_remember');
+      }
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('loadingScreen').style.display = 'flex';
       loadFromSupabase();
@@ -2947,6 +2957,7 @@ function showToast(msg) { const t=document.getElementById('toast'); t.textConten
 // ═══════════════════════════════════════════════════════
 function logout() {
   sessionStorage.removeItem('lagapp_auth');
+  localStorage.removeItem('lagapp_remember');
   location.reload();
 }
 
@@ -2988,7 +2999,8 @@ const _supa = window.supabase.createClient(
   'sb_publishable_3dKrAuijgGx0naYhf8zAMQ_ayKhiULp'
 );
 
-if (sessionStorage.getItem('lagapp_auth') === '1') {
+if (sessionStorage.getItem('lagapp_auth') === '1' || localStorage.getItem('lagapp_remember') === '1') {
+  sessionStorage.setItem('lagapp_auth', '1');
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('loadingScreen').style.display = 'flex';
   loadFromSupabase();
