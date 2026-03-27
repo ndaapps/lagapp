@@ -412,6 +412,14 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
         <div id="matchColumns"></div>
       </div>
 
+      <!-- RESULTS -->
+      <div class="page" id="page-results">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-results-btn">⚽ Välj lag ▾</button>
+        </div>
+        <div id="resultsList"></div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="page" id="page-settings">
         <div style="display:flex;margin-bottom:12px;"><button class="btn btn-ghost btn-sm" style="flex:1;justify-content:flex-start;" onclick="openSheet('teamSheet')" id="td-settings-btn">⚽ Välj lag ▾</button></div>
@@ -478,6 +486,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
   <button class="nav-btn"        onclick="showPage('players')"   id="nav-players"><span class="icon">👥</span>Spelare</button>
   <button class="nav-btn"        onclick="showPage('lineup')"    id="nav-lineup"><span class="icon">📋</span>Uttagning</button>
   <button class="nav-btn"        onclick="showPage('matches')"   id="nav-matches"><span class="icon">🏆</span>Matcher</button>
+  <button class="nav-btn"        onclick="showPage('results')"   id="nav-results" style="position:relative;"><span class="icon">📝</span>Resultat<span id="resultsBadge" style="display:none;position:absolute;top:6px;right:calc(50% - 14px);width:8px;height:8px;background:#e74c3c;border-radius:50%;"></span></button>
   <button class="nav-btn"        onclick="showPage('settings')"  id="nav-settings"><span class="icon">⚙️</span>Inställningar</button>
 </nav>
 
@@ -897,6 +906,7 @@ function save() {
   // Debounce Supabase sync by 800ms
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(() => syncToSupabase(), 800);
+  updateResultsBadge();
 }
 
 async function syncToSupabase() {
@@ -1000,6 +1010,7 @@ function showPage(p) {
   if (p==='players') renderPlayers();
   if (p==='lineup') { populateMatchDropdown(); renderLineup(); }
   if (p==='matches') { populateNewMatchLevel(); renderMatchColumns(); setDefaultDate('newMatchDate'); }
+  if (p==='results') renderResults();
   if (p==='settings') renderSettings();
   document.getElementById('scrollArea')?.scrollTo(0,0);
 }
@@ -2158,6 +2169,89 @@ function sendWA() { window.open('https://wa.me/?text='+encodeURIComponent(docume
 function copyWA() { navigator.clipboard.writeText(document.getElementById('waBubble').textContent); showToast('📋 Kopierat!'); }
 
 // ═══════════════════════════════════════════════════════
+// RESULTS PAGE
+// ═══════════════════════════════════════════════════════
+function updateResultsBadge() {
+  const t = getTeam();
+  if (!t) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const missing = (t.matches||[]).filter(m => {
+    const d = new Date(m.date+'T00:00:00');
+    if (d >= today) return false;
+    if (m.kickoff) {
+      const [h,min] = m.kickoff.split(':').map(Number);
+      const kt = new Date(d); kt.setHours(h,min,0,0);
+      if (kt >= new Date()) return false;
+    }
+    return !m.result;
+  });
+  const badge = document.getElementById('resultsBadge');
+  if (badge) badge.style.display = missing.length > 0 ? 'block' : 'none';
+}
+
+function renderResults() {
+  updateAllDropdowns();
+  const t = getTeam();
+  if (!t) return;
+  const el = document.getElementById('resultsList');
+  if (!el) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  const pastMatches = (t.matches||[])
+    .map((m,i) => ({m,i}))
+    .filter(({m}) => new Date(m.date+'T00:00:00') < today)
+    .sort((a,b) => new Date(b.m.date) - new Date(a.m.date));
+
+  if (pastMatches.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Inga spelade matcher ännu</div></div>';
+    return;
+  }
+
+  let html = '';
+  let lastWeek = '';
+  pastMatches.forEach(({m,i}) => {
+    const d = new Date(m.date);
+    const wk = getWeekLabel(m.date);
+    if (wk !== lastWeek) {
+      if (lastWeek) html += '</div>';
+      html += `<div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px;">${wk}</div><div style="display:flex;flex-direction:column;gap:5px;">`;
+      lastWeek = wk;
+    }
+    const lv = getLevelById(m.levelId);
+    const meta = [lv?.name, m.kickoff?`⚽ ${m.kickoff}`:'', m.teamGroup].filter(Boolean).join(' · ');
+    const hasResult = !!m.result;
+    html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.25)'};">
+      <div style="min-width:34px;text-align:center;">
+        <div style="font-size:15px;font-weight:700;color:var(--accent);line-height:1;">${d.getDate()}</div>
+        <div style="font-size:9px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
+        ${meta?`<div style="font-size:11px;color:var(--muted);margin-top:1px;">${meta}</div>`:''}
+      </div>
+      <input type="text" value="${m.result||''}" placeholder="0–0"
+        style="width:54px;text-align:center;font-size:14px;font-weight:700;padding:5px 6px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.4)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:Outfit,sans-serif;"
+        onchange="saveResultInline(${i}, this.value)"
+        onkeydown="if(event.key==='Enter'){this.blur();}">
+    </div>`;
+  });
+  if (lastWeek) html += '</div>';
+  el.innerHTML = html;
+  updateResultsBadge();
+}
+
+function saveResultInline(idx, val) {
+  const t = getTeam();
+  const m = (t.matches||[])[idx];
+  if (!m) return;
+  m.result = val.trim();
+  save();
+  renderResults();
+  renderMatchColumns(); // update match cards too
+  showToast(val ? `✅ ${m.opp} ${val}` : 'Resultat borttaget');
+}
+
+// ═══════════════════════════════════════════════════════
 // MATCHES PAGE
 // ═══════════════════════════════════════════════════════
 function populateNewMatchLevel() {
@@ -3080,7 +3174,7 @@ async function resetAllData() {
 function buildDesktopNav() {
   const nav=document.getElementById('desktopNav');
   if (!nav) return;
-  [['overview','📊','Översikt'],['players','👥','Spelare'],['lineup','📋','Uttagning'],['matches','🏆','Matcher'],['settings','⚙️','Inställningar']].forEach(([id,icon,label])=>{
+  [['overview','📊','Översikt'],['players','👥','Spelare'],['lineup','📋','Uttagning'],['matches','🏆','Matcher'],['results','📝','Resultat'],['settings','⚙️','Inställningar']].forEach(([id,icon,label])=>{
     const d=document.createElement('div');
     d.className=`desktop-nav-item${id==='overview'?' active':''}`;
     d.id='dn-'+id; d.innerHTML=`<span class="desktop-nav-icon">${icon}</span>${label}`;
