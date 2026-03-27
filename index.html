@@ -2254,21 +2254,20 @@ function renderResults() {
       </div>
       <div style="display:flex;align-items:center;gap:4px;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <div style="font-size:8px;color:var(--muted);text-transform:uppercase;">${isHome?'Vi':'Vi'}</div>
-          <input type="number" value="${gf}" placeholder="–" min="0" max="99"
+          <input type="number" value="${gf}" placeholder="–" min="0" max="99" id="gf-${i}"
             style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:Outfit,sans-serif;"
-            oninput="validateGoalInput(this);showSaveBtn(${i})"
+            oninput="validateGoalInput(this)"
             onkeydown="if(event.key==='Enter'){this.blur();}">
         </div>
         <div style="font-size:16px;color:var(--muted);font-weight:700;margin-top:10px;">–</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
-          <div style="font-size:8px;color:var(--muted);text-transform:uppercase;">Mot</div>
-          <input type="number" value="${ga}" placeholder="–" min="0" max="99"
+          <input type="number" value="${ga}" placeholder="–" min="0" max="99" id="ga-${i}"
             style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--muted)':'var(--text)'};font-family:Outfit,sans-serif;"
-            oninput="validateGoalInput(this);showSaveBtn(${i})"
+            oninput="validateGoalInput(this)"
             onkeydown="if(event.key==='Enter'){this.blur();}">
         </div>
       </div>
+      <button onclick="saveResultDirect(${i})" style="padding:7px 10px;border-radius:6px;background:var(--green-light);color:#111;border:none;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">✓</button>
     </div>`;
   });
   if (lastWeek) html += '</div>';
@@ -2300,7 +2299,25 @@ function showSaveBtn(idx) {
   btn.style.display = (gf !== '' && ga !== '') ? 'block' : 'none';
 }
 
-function saveResultFromFields(idx) {
+function saveResultDirect(idx) {
+  const gfEl = document.getElementById('gf-'+idx);
+  const gaEl = document.getElementById('ga-'+idx);
+  if (!gfEl || !gaEl) { showToast('Fel — ladda om sidan'); return; }
+  const gf = gfEl.value.trim();
+  const ga = gaEl.value.trim();
+  if (gf === '' || ga === '') { showToast('Fyll i båda mål'); return; }
+  const t = getTeam();
+  const m = (t.matches||[])[idx];
+  if (!m) return;
+  m.result = `${gf}–${ga}`;
+  save();
+  renderResults();
+  renderMatchColumns();
+  renderOverview();
+  showToast(`✅ ${m.opp} ${m.result}`);
+}
+
+function saveResultFromFields(idx) { saveResultDirect(idx); }
   // Find the two inputs for this row
   const rows = document.querySelectorAll('#resultsList [type="number"]');
   // Each match has 2 inputs — find the pair for this idx
