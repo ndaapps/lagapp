@@ -2230,37 +2230,41 @@ function renderMatchFilterBar() {
     return `<button onclick="${onclick}" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${txt};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;transition:all 0.1s;">${label}</button>`;
   };
 
-  let html = '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+  const t2 = getTeam();
+  const allM = (t2.matches||[]);
+  // Only show levels/cats that have matches
+  const activeLevels = levels.filter(lv => allM.some(m => m.levelId === lv.id));
+  const activeCats = cats.filter(cat => allM.some(m => m.categoryId === cat.id));
+  const hasActive = matchFilterLevel || matchFilterCat || matchFilterPeriod !== 'all';
 
-  // Period filter
-  html += chip('Kommande', matchFilterPeriod==='upcoming', "setMatchFilter('period','upcoming')", null);
-  html += chip('Spelade', matchFilterPeriod==='past', "setMatchFilter('period','past')", null);
+  // Row 1: period + clear
+  let row1 = '<div style="display:flex;gap:5px;margin-bottom:5px;">';
+  row1 += chip('Kommande', matchFilterPeriod==='upcoming', "setMatchFilter('period','upcoming')", null);
+  row1 += chip('Spelade', matchFilterPeriod==='past', "setMatchFilter('period','past')", null);
+  if (hasActive) row1 += `<button onclick="clearMatchFilters()" style="margin-left:auto;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:Outfit,sans-serif;">✕</button>`;
+  row1 += '</div>';
 
-  // Level filter
-  if (levels.length > 0) {
-    levels.forEach(lv => {
-      const c = getLevelColor(lv.id);
-      const active = matchFilterLevel === lv.id;
-      html += `<button onclick="setMatchFilter('level','${lv.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${lv.name}</button>`;
-    });
-  }
+  // Row 2: levels + categories
+  let row2chips = [];
+  activeLevels.forEach(lv => {
+    const c = getLevelColor(lv.id);
+    const active = matchFilterLevel === lv.id;
+    row2chips.push(`<button onclick="setMatchFilter('level','${lv.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${lv.name}</button>`);
+  });
+  activeCats.forEach(cat => {
+    const c = getCategoryColor(cat.id);
+    const active = matchFilterCat === cat.id;
+    row2chips.push(`<button onclick="setMatchFilter('cat','${cat.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${cat.name}</button>`);
+  });
 
-  // Category filter
-  if (cats.length > 0) {
-    cats.forEach(cat => {
-      const c = getCategoryColor(cat.id);
-      const active = matchFilterCat === cat.id;
-      html += `<button onclick="setMatchFilter('cat','${cat.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${cat.name}</button>`;
-    });
-  }
+  let row2 = row2chips.length > 0 ? '<div style="display:flex;flex-wrap:wrap;gap:5px;">' + row2chips.join('') + '</div>' : '';
 
-  // Clear if any active
-  if (matchFilterLevel || matchFilterCat || matchFilterPeriod !== 'all') {
-    html += `<button onclick="clearMatchFilters()" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:Outfit,sans-serif;">✕ Rensa</button>`;
-  }
-
-  html += '</div>';
-  el.innerHTML = html;
+  const hasFilters = activeLevels.length > 0 || activeCats.length > 0;
+  if (!hasFilters && !hasActive) { el.innerHTML = row1; return; }
+  el.innerHTML = `<div style="border:0.5px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--surface2);margin-bottom:4px;">
+    <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:7px;">Filter</div>
+    ${row1}${row2}
+  </div>`;
 }
 
 function setMatchFilter(type, val) {
