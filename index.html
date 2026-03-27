@@ -486,7 +486,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
   <button class="nav-btn"        onclick="showPage('players')"   id="nav-players"><span class="icon">👥</span>Spelare</button>
   <button class="nav-btn"        onclick="showPage('lineup')"    id="nav-lineup"><span class="icon">📋</span>Uttagning</button>
   <button class="nav-btn"        onclick="showPage('matches')"   id="nav-matches"><span class="icon">🏆</span>Matcher</button>
-  <button class="nav-btn"        onclick="showPage('results')"   id="nav-results" style="position:relative;"><span class="icon">📝</span>Resultat<span id="resultsBadge" style="display:none;position:absolute;top:6px;right:calc(50% - 14px);width:8px;height:8px;background:#e74c3c;border-radius:50%;"></span></button>
+  <button class="nav-btn"        onclick="showPage('results')"   id="nav-results" style="position:relative;"><span class="icon">📝</span>Resultat<span id="resultsBadge" style="display:none;position:absolute;top:4px;right:calc(50% - 18px);min-width:16px;height:16px;background:#e74c3c;border-radius:8px;font-size:9px;font-weight:700;color:white;display:none;align-items:center;justify-content:center;padding:0 3px;"></span></button>
   <button class="nav-btn"        onclick="showPage('settings')"  id="nav-settings"><span class="icon">⚙️</span>Inställningar</button>
 </nav>
 
@@ -1184,6 +1184,28 @@ function renderOverview() {
         <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${m.opp}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${levelBadgeHTML(m.levelId)}</div></div>
         <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);">${m.result}</div>
       </div>`;}).join('');
+}
+
+function isMatchPast(m) {
+  // A match is past if its end time (kickoff + duration) has passed
+  const now = new Date();
+  const matchDate = new Date(m.date+'T00:00:00');
+  // If date is in the future — definitely not past
+  if (matchDate > now) return false;
+  // If date is in the past (not today) — past
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (matchDate < today) return true;
+  // Same day — check kickoff + duration
+  if (m.kickoff) {
+    const [h,min] = m.kickoff.split(':').map(Number);
+    const kickoff = new Date(matchDate);
+    kickoff.setHours(h, min, 0, 0);
+    const duration = m.duration || 60;
+    const endTime = new Date(kickoff.getTime() + duration * 60000);
+    return now >= endTime;
+  }
+  // No kickoff — use end of day as cutoff
+  return false;
 }
 
 function parseGoals(result) {
@@ -2099,7 +2121,7 @@ function openWhatsApp() {
     const lv = getLevelById(m.levelId);
     const lc = (m.lineup||[]).length;
     const isComplete = lc >= fmtCount;
-    const isPast = d < today;
+    const isPast = isMatchPast(m);
     const preChecked = !isPast;
     return `<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;opacity:${isPast?0.6:1};" id="wapick-${i}">
       <input type="checkbox" value="${i}" ${preChecked?'checked':''} style="width:16px;height:16px;cursor:pointer;" onchange="updateWAPickStyle(${i},this.checked)">
@@ -2112,7 +2134,7 @@ function openWhatsApp() {
   }).join('');
 
   withLineup.forEach(({i,m})=>{
-    const isPast = new Date(m.date) < today;
+    const isPast = isMatchPast(m);
     updateWAPickStyle(i, !isPast);
   });
 
@@ -2175,16 +2197,7 @@ function updateResultsBadge() {
   const t = getTeam();
   if (!t) return;
   const today = new Date(); today.setHours(0,0,0,0);
-  const missing = (t.matches||[]).filter(m => {
-    const d = new Date(m.date+'T00:00:00');
-    if (d >= today) return false;
-    if (m.kickoff) {
-      const [h,min] = m.kickoff.split(':').map(Number);
-      const kt = new Date(d); kt.setHours(h,min,0,0);
-      if (kt >= new Date()) return false;
-    }
-    return !m.result;
-  });
+  const missing = (t.matches||[]).filter(m => isMatchPast(m) && !m.result);
   const badge = document.getElementById('resultsBadge');
   if (badge) badge.style.display = missing.length > 0 ? 'block' : 'none';
 }
@@ -2199,11 +2212,16 @@ function renderResults() {
 
   const pastMatches = (t.matches||[])
     .map((m,i) => ({m,i}))
-    .filter(({m}) => new Date(m.date+'T00:00:00') < today)
-    .sort((a,b) => new Date(b.m.date) - new Date(a.m.date));
+    .filter(({m}) => isMatchPast(m) && !m.result)
+    .sort((a,b) => {
+      const dd = new Date(b.m.date) - new Date(a.m.date);
+      if (dd !== 0) return dd;
+      return (b.m.kickoff||'').localeCompare(a.m.kickoff||'');
+    });
 
   if (pastMatches.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Inga spelade matcher ännu</div></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-text">Alla resultat är ifyllda!</div></div>';
+    updateResultsBadge();
     return;
   }
 
@@ -2220,7 +2238,12 @@ function renderResults() {
     const lv = getLevelById(m.levelId);
     const meta = [lv?.name, m.kickoff?`⚽ ${m.kickoff}`:'', m.teamGroup].filter(Boolean).join(' · ');
     const hasResult = !!m.result;
-    html += `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.25)'};">
+    const goals = parseGoals(m.result);
+    const gf = goals ? goals.scored : '';
+    const ga = goals ? goals.conceded : '';
+    const isHome = m.homeAway === 'hemma';
+    const isBorta = m.homeAway === 'borta';
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.25)'};">
       <div style="min-width:34px;text-align:center;">
         <div style="font-size:15px;font-weight:700;color:var(--accent);line-height:1;">${d.getDate()}</div>
         <div style="font-size:9px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
@@ -2229,10 +2252,23 @@ function renderResults() {
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
         ${meta?`<div style="font-size:11px;color:var(--muted);margin-top:1px;">${meta}</div>`:''}
       </div>
-      <input type="text" value="${m.result||''}" placeholder="0–0"
-        style="width:54px;text-align:center;font-size:14px;font-weight:700;padding:5px 6px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.4)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:Outfit,sans-serif;"
-        onchange="saveResultInline(${i}, this.value)"
-        onkeydown="if(event.key==='Enter'){this.blur();}">
+      <div style="display:flex;align-items:center;gap:4px;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <div style="font-size:8px;color:var(--muted);text-transform:uppercase;">${isHome?'Vi':'Vi'}</div>
+          <input type="number" value="${gf}" placeholder="–" min="0" max="99"
+            style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:Outfit,sans-serif;"
+            oninput="validateGoalInput(this);showSaveBtn(${i})"
+            onkeydown="if(event.key==='Enter'){this.blur();}">
+        </div>
+        <div style="font-size:16px;color:var(--muted);font-weight:700;margin-top:10px;">–</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+          <div style="font-size:8px;color:var(--muted);text-transform:uppercase;">Mot</div>
+          <input type="number" value="${ga}" placeholder="–" min="0" max="99"
+            style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--muted)':'var(--text)'};font-family:Outfit,sans-serif;"
+            oninput="validateGoalInput(this);showSaveBtn(${i})"
+            onkeydown="if(event.key==='Enter'){this.blur();}">
+        </div>
+      </div>
     </div>`;
   });
   if (lastWeek) html += '</div>';
@@ -2240,15 +2276,65 @@ function renderResults() {
   updateResultsBadge();
 }
 
-function saveResultInline(idx, val) {
+function validateGoalInput(el) {
+  el.value = el.value.replace(/[^0-9]/g, '');
+  if (el.value !== '' && parseInt(el.value) > 99) el.value = '99';
+}
+
+function showSaveBtn(idx) {
+  const btn = document.getElementById('savebtn-'+idx);
+  if (!btn) return;
+  // Find this match's two inputs by data-match
+  const inputs = document.querySelectorAll(`input[data-match="${idx}"]`);
+  // Also find paired inputs (the "Vi" input doesn't have data-match yet — use positional)
   const t = getTeam();
+  const pastMatches = (t.matches||[]).map((m,i)=>({m,i})).filter(({m})=>isMatchPast(m))
+    .sort((a,b)=>{const dd=new Date(b.m.date)-new Date(a.m.date); return dd!==0?dd:(b.m.kickoff||'').localeCompare(a.m.kickoff||'');});
+  const pos = pastMatches.findIndex(({i})=>i===idx);
+  const allInputs = document.querySelectorAll('#resultsList input[type="number"]');
+  const pairs = [];
+  for (let j=0; j<allInputs.length; j+=2) pairs.push([allInputs[j], allInputs[j+1]]);
+  if (pos < 0 || pos >= pairs.length) return;
+  const gf = pairs[pos][0].value;
+  const ga = pairs[pos][1].value;
+  btn.style.display = (gf !== '' && ga !== '') ? 'block' : 'none';
+}
+
+function saveResultFromFields(idx) {
+  // Find the two inputs for this row
+  const rows = document.querySelectorAll('#resultsList [type="number"]');
+  // Each match has 2 inputs — find the pair for this idx
+  // We use data-idx on the parent div to identify
+  const allDivs = document.querySelectorAll('#resultsList > div > div');
+  // Simpler: re-read all rows and find by position
+  const matchDivs = document.querySelectorAll('#resultsList input[type="number"]');
+  // Group by pairs
+  const pairs = [];
+  for (let i=0; i<matchDivs.length; i+=2) pairs.push([matchDivs[i], matchDivs[i+1]]);
+
+  // Find which pair belongs to this idx by traversal order
+  // Since renderResults renders in order, find the idx-th match in pastMatches order
+  const t = getTeam();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const pastMatches = (t.matches||[]).map((m,i)=>({m,i})).filter(({m})=>isMatchPast(m))
+    .sort((a,b)=>{const dd=new Date(b.m.date)-new Date(a.m.date); return dd!==0?dd:(b.m.kickoff||'').localeCompare(a.m.kickoff||'');});
+  const pos = pastMatches.findIndex(({i})=>i===idx);
+  if (pos < 0 || pos >= pairs.length) return;
+
+  const gf = pairs[pos][0].value;
+  const ga = pairs[pos][1].value;
+
+  // Both must be filled
+  if (gf === '' || ga === '') return;
+
   const m = (t.matches||[])[idx];
   if (!m) return;
-  m.result = val.trim();
+  m.result = `${gf}–${ga}`;
   save();
-  renderResults();
-  renderMatchColumns(); // update match cards too
-  showToast(val ? `✅ ${m.opp} ${val}` : 'Resultat borttaget');
+  renderResults();   // re-renders without this match (it now has result)
+  renderMatchColumns();
+  renderOverview();
+  showToast(`✅ ${m.opp} ${m.result}`);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2396,13 +2482,13 @@ function renderMatchColumns() {
     return;
   }
 
-  const upcoming = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')>=today).sort((a,b)=>{
+  const upcoming = allMatches.filter(({m})=>!isMatchPast(m)).sort((a,b)=>{
     const dateDiff = new Date(a.m.date) - new Date(b.m.date);
     if (dateDiff !== 0) return dateDiff;
     const ta = a.m.kickoff||'99:99'; const tb = b.m.kickoff||'99:99';
     return ta.localeCompare(tb);
   });
-  const past     = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')<today).sort((a,b)=>{
+  const past = allMatches.filter(({m})=>isMatchPast(m)).sort((a,b)=>{
     const dateDiff = new Date(b.m.date) - new Date(a.m.date);
     if (dateDiff !== 0) return dateDiff;
     const ta = a.m.kickoff||'99:99'; const tb = b.m.kickoff||'99:99';
@@ -2478,8 +2564,9 @@ function matchCardHTML(m, i, isPast) {
 
   const d = new Date(m.date);
   const dayStr = d.toLocaleDateString('sv-SE',{weekday:'short',day:'numeric',month:'short'});
+  const isPastNow = isMatchPast(m);
 
-  return `<div class="match-card ${isPast?'past':''}" onclick="openMatchDetail(${i})" style="flex-direction:column;align-items:stretch;gap:6px;padding:10px 12px;">
+  return `<div class="match-card ${isPastNow?'past':''}" onclick="openMatchDetail(${i})" style="flex-direction:column;align-items:stretch;gap:6px;padding:10px 12px;">
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
         <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</span>
