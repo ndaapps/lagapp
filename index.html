@@ -406,6 +406,8 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
           </div>
         </div>
         <div id="matchImportStatus" style="display:none;margin-bottom:10px;padding:10px 12px;border-radius:8px;font-size:13px;border:1px solid rgba(56,189,248,0.3);background:rgba(56,189,248,0.05);"></div>
+        <!-- Match filters -->
+        <div id="matchFilterBar" style="margin-bottom:10px;"></div>
         <!-- Match list by level columns -->
         <div id="matchColumns"></div>
       </div>
@@ -1226,9 +1228,26 @@ function renderLevelStats(t) {
       const c = getLevelColor(lv.id);
       const lvMatches = matches.filter(m => m.levelId === lv.id);
 
-      // Next match for this level
-      const upcoming = lvMatches.filter(m => !m.result || new Date(m.date+'T00:00:00') >= today)
-        .sort((a,b) => new Date(a.date) - new Date(b.date));
+      // Next match for this level — sort by date+kickoff, skip past matches today
+      const now = new Date();
+      const upcoming = lvMatches.filter(m => {
+        if (m.result) return false;
+        const d = new Date(m.date+'T00:00:00');
+        if (d > today) return true; // future date
+        if (d.toDateString() === now.toDateString()) {
+          // Same day — check kickoff time
+          if (!m.kickoff) return true; // no kickoff = include
+          const [h,min] = m.kickoff.split(':').map(Number);
+          const kickoffTime = new Date(d); kickoffTime.setHours(h, min, 0, 0);
+          return kickoffTime > now; // only if kickoff hasn't passed
+        }
+        return false;
+      }).sort((a,b) => {
+        const dateDiff = new Date(a.date) - new Date(b.date);
+        if (dateDiff !== 0) return dateDiff;
+        const ta = a.kickoff||'99:99'; const tb = b.kickoff||'99:99';
+        return ta.localeCompare(tb);
+      });
       const nextMatch = upcoming[0];
       const nextMatchHTML = nextMatch ? (() => {
         const d = new Date(nextMatch.date);
@@ -1424,6 +1443,9 @@ let lineupSortBy = 'jersey'; // jersey | first | last | pos
 let lineupEditMode = false; // true = show all players, false = show only selected if complete
 let playerLevelFilter = null;   // null = all levels
 let playerSortBy = 'jersey';    // jersey | first | last | pos
+let matchFilterLevel = null;
+let matchFilterCat = null;
+let matchFilterPeriod = 'all';  // all | upcoming | past
 let lineupAvailFilter = false; // true=only show available
 
 function openPlayerProfile(pid) {
@@ -2195,6 +2217,66 @@ function getWeekLabel(dateStr) {
   return `Vecka ${getWeekNumber(d)}`;
 }
 
+function renderMatchFilterBar() {
+  const el = document.getElementById('matchFilterBar');
+  if (!el) return;
+  const levels = getLevels();
+  const cats = getCategories();
+
+  const chip = (label, active, onclick, color) => {
+    const bg = active ? (color||'var(--accent)') : 'transparent';
+    const border = active ? (color||'var(--accent)') : 'var(--border)';
+    const txt = active ? (color ? color : 'var(--bg)') : 'var(--muted)';
+    return `<button onclick="${onclick}" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${txt};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;transition:all 0.1s;">${label}</button>`;
+  };
+
+  let html = '<div style="display:flex;flex-wrap:wrap;gap:5px;">';
+
+  // Period filter
+  html += chip('Kommande', matchFilterPeriod==='upcoming', "setMatchFilter('period','upcoming')", null);
+  html += chip('Spelade', matchFilterPeriod==='past', "setMatchFilter('period','past')", null);
+
+  // Level filter
+  if (levels.length > 0) {
+    levels.forEach(lv => {
+      const c = getLevelColor(lv.id);
+      const active = matchFilterLevel === lv.id;
+      html += `<button onclick="setMatchFilter('level','${lv.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${lv.name}</button>`;
+    });
+  }
+
+  // Category filter
+  if (cats.length > 0) {
+    cats.forEach(cat => {
+      const c = getCategoryColor(cat.id);
+      const active = matchFilterCat === cat.id;
+      html += `<button onclick="setMatchFilter('cat','${cat.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${cat.name}</button>`;
+    });
+  }
+
+  // Clear if any active
+  if (matchFilterLevel || matchFilterCat || matchFilterPeriod !== 'all') {
+    html += `<button onclick="clearMatchFilters()" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:Outfit,sans-serif;">✕ Rensa</button>`;
+  }
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function setMatchFilter(type, val) {
+  if (type === 'level')  matchFilterLevel  = matchFilterLevel  === val ? null : val;
+  if (type === 'cat')    matchFilterCat    = matchFilterCat    === val ? null : val;
+  if (type === 'period') matchFilterPeriod = matchFilterPeriod === val ? 'all' : val;
+  renderMatchFilterBar();
+  renderMatchColumns();
+}
+
+function clearMatchFilters() {
+  matchFilterLevel = null; matchFilterCat = null; matchFilterPeriod = 'all';
+  renderMatchFilterBar();
+  renderMatchColumns();
+}
+
 function renderMatchColumns() {
   const t = getTeam();
   if (!t) { document.getElementById('matchColumns').innerHTML='<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">Lägg till ett lag under Inställningar</div></div>'; return; }
@@ -2203,9 +2285,16 @@ function renderMatchColumns() {
   container.style.display = 'block';
   container.style.gridTemplateColumns = '';
 
-  const allMatches = (t.matches||[]).map((m,i)=>({m,i}));
+  renderMatchFilterBar();
+
+  let allMatches = (t.matches||[]).map((m,i)=>({m,i}));
+
+  // Apply filters
+  if (matchFilterLevel) allMatches = allMatches.filter(({m}) => m.levelId === matchFilterLevel);
+  if (matchFilterCat)   allMatches = allMatches.filter(({m}) => m.categoryId === matchFilterCat);
+
   if (allMatches.length===0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Inga matcher ännu</div></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Inga matcher matchar filtret</div></div>';
     return;
   }
 
@@ -2224,14 +2313,18 @@ function renderMatchColumns() {
 
   let html = '';
 
-  if (upcoming.length > 0) {
+  const showUpcoming = matchFilterPeriod !== 'past';
+  const showPast = matchFilterPeriod !== 'upcoming';
+
+  if (showUpcoming && upcoming.length > 0) {
     html += `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;padding:4px 0 8px;">Kommande</div>`;
     html += renderWeekGroups(upcoming, today, false);
   }
-  if (past.length > 0) {
+  if (showPast && past.length > 0) {
     html += `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;padding:12px 0 8px;">Spelade</div>`;
     html += renderWeekGroups(past, today, true);
   }
+  if (!html) html = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Inga matcher matchar filtret</div></div>';
 
   container.innerHTML = html;
 }
@@ -2339,7 +2432,7 @@ function openMatchDetail(idx) {
   // Lineup list
   const playerMap={}; (t.players||[]).forEach(p=>playerMap[p.id]=p);
   const coachMap={};  (t.coaches||[]).forEach(c=>coachMap[c.id]=c);
-  const lineup = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
+  const lineup = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean).sort((a,b)=>a.first.localeCompare(b.first,'sv'));
   const coaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
   let html='';
   if (lineup.length>0) html+=lineup.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
