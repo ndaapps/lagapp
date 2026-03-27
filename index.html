@@ -2643,9 +2643,13 @@ async function removeMatchFromDetail() {
   if (selectedMatchIdx===detailMatchIdx) selectedMatchIdx=-1;
   else if (selectedMatchIdx>detailMatchIdx) selectedMatchIdx--;
   t.matches.splice(detailMatchIdx,1);
-  save();
-  // Also delete from Supabase immediately
+  // Save to localStorage immediately
+  try { localStorage.setItem('lagapp_v6', JSON.stringify(teams)); } catch(e){}
+  // Delete from Supabase first, then cancel any pending sync
+  clearTimeout(_saveTimer);
   try { await _supa.from('matches').delete().eq('id', matchId); } catch(e) { console.error('Delete match error:', e); }
+  // Now sync the rest
+  syncToSupabase();
   closeSheet('matchDetailSheet'); renderMatchColumns(); populateMatchDropdown();
   showToast('Match borttagen');
 }
