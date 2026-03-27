@@ -2199,8 +2199,18 @@ function renderMatchColumns() {
     return;
   }
 
-  const upcoming = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')>=today).sort((a,b)=>new Date(a.m.date)-new Date(b.m.date));
-  const past     = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')<today).sort((a,b)=>new Date(b.m.date)-new Date(a.m.date));
+  const upcoming = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')>=today).sort((a,b)=>{
+    const dateDiff = new Date(a.m.date) - new Date(b.m.date);
+    if (dateDiff !== 0) return dateDiff;
+    const ta = a.m.kickoff||'99:99'; const tb = b.m.kickoff||'99:99';
+    return ta.localeCompare(tb);
+  });
+  const past     = allMatches.filter(({m})=>new Date(m.date+'T00:00:00')<today).sort((a,b)=>{
+    const dateDiff = new Date(b.m.date) - new Date(a.m.date);
+    if (dateDiff !== 0) return dateDiff;
+    const ta = a.m.kickoff||'99:99'; const tb = b.m.kickoff||'99:99';
+    return ta.localeCompare(tb);
+  });
 
   let html = '';
 
