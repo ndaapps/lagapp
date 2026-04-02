@@ -661,8 +661,36 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
       <div class="stat-card" style="padding:12px;"><div class="stat-num" style="font-size:30px;" id="profileSeason">0</div><div class="stat-label">Denna säsong</div></div>
     </div>
     <div class="card-title">Matcher</div>
-    <div id="profileMatchList" style="max-height:40vh;overflow-y:auto;"></div>
-    <button class="btn btn-ghost btn-full" style="margin-top:14px;" onclick="closeSheet('playerProfileSheet')">Stäng</button>
+    <div id="profileMatchList" style="max-height:30vh;overflow-y:auto;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeSheet('playerProfileSheet')">Stäng</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="openEditPlayer()">✏️ Redigera</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Player Sheet -->
+<div class="sheet-backdrop" id="editPlayerSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Redigera spelare</div>
+    <div class="form-row">
+      <div class="form-group"><label>Förnamn</label><input class="form-control" id="editFirst"></div>
+      <div class="form-group"><label>Efternamn</label><input class="form-control" id="editLast"></div>
+    </div>
+    <div class="form-group"><label>Tröjnummer</label><input class="form-control" type="number" id="editJersey" min="1" max="99"></div>
+    <div class="form-group">
+      <label>Position (välj flera)</label>
+      <div id="editPosCheckboxes" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+    </div>
+    <div class="form-group" id="editLevelGroup">
+      <label>Nivåer</label>
+      <div id="editLevelCheckboxes" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeSheet('editPlayerSheet')">Avbryt</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveEditPlayer()">Spara</button>
+    </div>
   </div>
 </div>
 
@@ -1449,6 +1477,67 @@ function coachRowHTML(c, maxM, cnt) {
 // ═══════════════════════════════════════════════════════
 // PLAYER PROFILE
 // ═══════════════════════════════════════════════════════
+function openEditPlayer() {
+  const t = getTeam();
+  const p = (t.players||[]).find(p=>p.id===profilePlayerId);
+  if (!p) return;
+  document.getElementById('editFirst').value = p.first||'';
+  document.getElementById('editLast').value = p.last||'';
+  document.getElementById('editJersey').value = p.jersey||'';
+
+  // Position checkboxes
+  const posEl = document.getElementById('editPosCheckboxes');
+  const colors = { 'badge-gk':'#f5c518','badge-def':'#3dba74','badge-mid':'#38bdf8','badge-fwd':'#ff6b35' };
+  const currentPos = Array.isArray(p.pos) ? p.pos : [p.pos];
+  posEl.innerHTML = POSITIONS.map((pos,idx) => {
+    const cls = POS_BADGE[pos]||'badge-mid';
+    const c = colors[cls]||'var(--accent)';
+    const checked = currentPos.includes(pos);
+    return `<label style="display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:20px;border:1.5px solid ${checked?c:'var(--border)'};background:${checked?c+'22':'transparent'};cursor:pointer;font-size:13px;font-weight:700;color:${checked?c:'var(--muted)'};transition:all 0.15s;" data-pos="${idx}">
+      <input type="checkbox" value="${pos}" ${checked?'checked':''} style="display:none;" onchange="toggleEditPosChk(this,${idx})">
+      ${pos}
+    </label>`;
+  }).join('');
+
+  // Level checkboxes
+  populateLevelCheckboxes('editLevelCheckboxes', p.levelIds||[]);
+  const lvlGroup = document.getElementById('editLevelGroup');
+  if (lvlGroup) lvlGroup.style.display = getLevels().length > 0 ? 'block' : 'none';
+
+  closeSheet('playerProfileSheet');
+  openSheet('editPlayerSheet');
+}
+
+function toggleEditPosChk(cb, idx) {
+  const label = document.querySelector(`#editPosCheckboxes [data-pos="${idx}"]`);
+  if (!label) return;
+  const pos = cb.value;
+  const cls = POS_BADGE[pos]||'badge-mid';
+  const colors = { 'badge-gk':'#f5c518','badge-def':'#3dba74','badge-mid':'#38bdf8','badge-fwd':'#ff6b35' };
+  const c = colors[cls]||'var(--accent)';
+  if (cb.checked) {
+    label.style.borderColor=c; label.style.background=c+'22'; label.style.color=c;
+  } else {
+    label.style.borderColor='var(--border)'; label.style.background='transparent'; label.style.color='var(--muted)';
+  }
+}
+
+function saveEditPlayer() {
+  const t = getTeam();
+  const p = (t.players||[]).find(p=>p.id===profilePlayerId);
+  if (!p) return;
+  const first = document.getElementById('editFirst').value.trim();
+  const last  = document.getElementById('editLast').value.trim();
+  const jersey = parseInt(document.getElementById('editJersey').value)||0;
+  if (!first||!last) { showToast('Ange för- och efternamn'); return; }
+  const pos = [...document.querySelectorAll('#editPosCheckboxes input:checked')].map(cb=>cb.value);
+  if (pos.length===0) { showToast('Välj minst en position'); return; }
+  const levelIds = getCheckedLevels('editLevelCheckboxes');
+  p.first = first; p.last = last; p.jersey = jersey; p.pos = pos; p.levelIds = levelIds;
+  save(); closeSheet('editPlayerSheet'); renderPlayers();
+  showToast(`✅ ${first} ${last} uppdaterad`);
+}
+
 function editPlayerLevels() {
   const t = getTeam();
   const p = (t.players||[]).find(x=>x.id===profilePlayerId);
@@ -2263,23 +2352,27 @@ function renderResults() {
       lastWeek = wk;
     }
     const lv = getLevelById(m.levelId);
-    const meta = [lv?.name, m.kickoff?`⚽ ${m.kickoff}`:'', m.teamGroup].filter(Boolean).join(' · ');
     const hasResult = !!m.result;
     const goals = parseGoals(m.result);
-    const gf = goals ? goals.scored : '';
-    const ga = goals ? goals.conceded : '';
-    const isHome = m.homeAway === 'hemma';
-    const isBorta = m.homeAway === 'borta';
-    html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:var(--surface2);border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.25)'};">
-      <div style="min-width:34px;text-align:center;">
-        <div style="font-size:15px;font-weight:700;color:var(--accent);line-height:1;">${d.getDate()}</div>
-        <div style="font-size:9px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
+    const isAway = m.homeAway === 'borta';
+    // When away: stored result is "opponent–us", so scored=opponent, conceded=us
+    const gf = goals ? (isAway ? goals.conceded : goals.scored) : '';
+    const ga = goals ? (isAway ? goals.scored : goals.conceded) : '';
+    const hbLabel = m.homeAway==='hemma' ? 'Hemma' : m.homeAway==='borta' ? 'Borta' : '';
+    const metaParts = [m.kickoff?`⚽ ${m.kickoff}`:'', hbLabel, m.venue||''].filter(Boolean).join(' · ');
+    const dayStr2 = d.toLocaleDateString('sv-SE',{weekday:'short',day:'numeric',month:'short'});
+    html += `<div style="border-radius:10px;background:var(--surface2);border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.25)'};padding:10px 12px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">
+          <span style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</span>
+          ${levelBadgeHTML(m.levelId)}
+          ${categoryBadgeHTML(m.categoryId)}
+          ${teamGroupBadgeHTML(m.teamGroup)}
+        </div>
       </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.opp}</div>
-        ${meta?`<div style="font-size:11px;color:var(--muted);margin-top:1px;">${meta}</div>`:''}
-      </div>
-      <div style="display:flex;align-items:center;gap:4px;">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${dayStr2}${metaParts?' · '+metaParts:''}</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
           <input type="number" value="${gf}" placeholder="–" min="0" max="99" id="gf-${i}"
             style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:Outfit,sans-serif;"
@@ -2336,7 +2429,10 @@ function saveResultDirect(idx) {
   const t = getTeam();
   const m = (t.matches||[])[idx];
   if (!m) return;
-  m.result = `${gf}–${ga}`;
+  // If playing away, convention is opponent first
+  const mRes = (t.matches||[])[idx];
+  const resultStr = mRes?.homeAway === 'borta' ? `${ga}–${gf}` : `${gf}–${ga}`;
+  m.result = resultStr;
   save();
   renderResults();
   renderMatchColumns();
@@ -2688,7 +2784,7 @@ function renderSettings() {
   renderLevelsList();
   renderSeasonsList();
   renderTeamList();
-  // Formation
+  if (!t) return;
   const fs = document.getElementById('formatSelect');
   if (fs) fs.value = t.format||11;
   populateFormationSelect();
@@ -2696,6 +2792,7 @@ function renderSettings() {
 
 function renderLevelsList() {
   const t = getTeam();
+  if (!t) return;
   const levels = t.levels||[];
   const el = document.getElementById('levelsList');
   if (!el) return;
