@@ -10,76 +10,79 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzExMSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTYwIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjMTExIiBzdHJva2Utd2lkdGg9IjgiLz4KICA8cG9seWdvbiBwb2ludHM9IjI1NiwxMzAgMjg5LDIyNCAzOTAsMjI0IDMwOSwyODEgMzM4LDM3NCAyNTYsMzE4IDE3NCwzNzQgMjAzLDI4MSAxMjIsMjI0IDIyMywyMjQiIGZpbGw9IiMxMTEiLz4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjQwIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KICA8cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEwMCIgZmlsbD0iIzExMSIvPgogIDxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iMTYwIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjMTExIiBzdHJva2Utd2lkdGg9IjgiLz4KICA8cG9seWdvbiBwb2ludHM9IjI1NiwxMzAgMjg5LDIyNCAzOTAsMjI0IDMwOSwyODEgMzM4LDM3NCAyNTYsMzE4IDE3NCwzNzQgMjAzLDI4MSAxMjIsMjI0IDIyMywyMjQiIGZpbGw9IiMxMTEiLz4KICA8Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjQwIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4=">
 <title>Lagapp</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.383.0/dist/umd/lucide.min.js"></script>
 
 <style>
 :root {
-  --green-dark: #0d2b18; --green: #164d2c; --green-mid: #1f6b3c;
-  --green-light: #3dba74; --accent: #f5c518; --accent2: #ff6b35;
-  --bg: #0a1a10; --surface: #111e15; --surface2: #182a1e; --surface3: #1e3526;
-  --border: #243b2c; --text: #e4efe7; --muted: #6a9478; --white: #fff;
-  --danger: #e74c3c; --loan: #a78bfa; --coach: #38bdf8;
-  --radius: 12px; --radius-sm: 8px; --nav-h: 64px;
+  --bg: #0b0f1a; --surface: #111827; --surface2: #161d2e; --surface3: #1a2235;
+  --border: #1e2d45; --text: #e2e8f4; --muted: #4a6080; --white: #fff;
+  --accent: #00e5c0; --accent2: #f59e0b; --accent-dim: rgba(0,229,192,0.1);
+  --green-light: #00e5c0; --green: #0a2a25; --green-mid: #0d3d35; --green-dark: #061814;
+  --danger: #f87171; --loan: #a78bfa; --coach: #60a5fa;
+  --radius: 10px; --radius-sm: 7px; --nav-h: 64px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; overscroll-behavior: none; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; overscroll-behavior: none; }
 
 /* APP SHELL */
 .app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background: var(--bg); position: relative; }
-.header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 50; }
+.header { background: rgba(11,15,26,0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(0,229,192,0.08); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; z-index: 50; }
 .brand { display: flex; align-items: center; gap: 8px; }
-.brand-name { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; color: var(--accent); }
+.brand-name { font-family: 'Chakra Petch', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 1px; color: var(--accent); }
 .scroll-area { flex: 1; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; padding-bottom: calc(var(--nav-h) + 12px); }
-.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: var(--nav-h); background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; }
-.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; border: none; background: none; font-family: 'Outfit', sans-serif; transition: color 0.15s; padding: 8px 4px; }
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: var(--nav-h); background: rgba(11,15,26,0.82); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-top: 1px solid rgba(0,229,192,0.08); display: flex; z-index: 100; }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; border: none; background: none; font-family: 'DM Sans', sans-serif; transition: color 0.15s; padding: 6px 2px; }
 .nav-btn .icon { font-size: 20px; transition: transform 0.15s; }
+.nav-btn .lucide-icon { width: 20px; height: 20px; stroke: currentColor; transition: transform 0.15s; }
 .nav-btn.active { color: var(--accent); }
-.nav-btn.active .icon { transform: scale(1.15); }
+.nav-btn.active .lucide-icon { transform: scale(1.15); }
 
 /* PAGES */
 .page { display: none; padding: 14px; }
 .page.active { display: block; }
 .team-selector-bar { margin-bottom: 12px; }
-.team-selector-bar select { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 600; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'Outfit', sans-serif; -webkit-appearance: none; }
+.team-selector-bar select { width: 100%; background: transparent; border: 1px solid var(--border); color: var(--muted); font-weight: 600; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 13px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; }
 .team-selector-bar select:focus { outline: none; border-color: var(--accent); color: var(--accent); }
 
 /* CARDS */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
-.card-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; color: var(--muted); margin-bottom: 12px; }
+.card-title { font-family: 'Chakra Petch', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; }
 
 /* STAT GRID */
 .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 12px; text-align: center; }
-.stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 38px; color: var(--accent); line-height: 1; }
-.stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.stat-num { font-family: 'Chakra Petch', sans-serif; font-size: 36px; font-weight: 700; color: var(--accent); line-height: 1; }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
 /* PLAYER ROW */
-.player-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid rgba(36,59,44,0.6); cursor: pointer; }
+.player-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid rgba(30,45,69,0.8); cursor: pointer; }
 .player-row:last-child { border-bottom: none; }
-.jersey { width: 32px; height: 32px; background: var(--green); border: 1.5px solid var(--green-light); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: var(--accent); flex-shrink: 0; }
+.jersey { width: 32px; height: 32px; background: var(--green); border: 1.5px solid var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-family: 'Chakra Petch', sans-serif; font-size: 15px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
 .jersey.loan { border-color: var(--loan); color: var(--loan); }
 .player-info { flex: 1; min-width: 0; }
-.player-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.player-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .player-meta { display: flex; align-items: center; gap: 5px; margin-top: 3px; flex-wrap: wrap; }
-.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; white-space: nowrap; }
-.badge-gk  { background: rgba(245,197,24,0.15); color: var(--accent); }
-.badge-def { background: rgba(61,186,116,0.15); color: var(--green-light); }
-.badge-mid { background: rgba(56,189,248,0.15); color: var(--coach); }
-.badge-fwd { background: rgba(255,107,53,0.15); color: var(--accent2); }
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+.badge-gk  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.badge-def { background: rgba(0,229,192,0.12); color: var(--accent); }
+.badge-mid { background: rgba(96,165,250,0.12); color: var(--coach); }
+.badge-fwd { background: rgba(248,113,113,0.12); color: var(--danger); }
 .badge-loan { background: rgba(167,139,250,0.15); color: var(--loan); }
-.badge-coach { background: rgba(56,189,248,0.12); color: var(--coach); }
+.badge-coach { background: rgba(96,165,250,0.12); color: var(--coach); }
 
-/* LEVEL BADGE — colored per level index */
-.lvl-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+/* LEVEL BADGE */
+.lvl-badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 5px; font-size: 10px; font-weight: 600; white-space: nowrap; }
 
 /* BUTTONS */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; font-family: 'Outfit', sans-serif; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap; }
-.btn-primary { background: var(--accent); color: #111; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: all 0.15s; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #0b0f1a; box-shadow: 0 0 12px rgba(0,229,192,0.25); }
+.btn-primary:active { box-shadow: 0 0 6px rgba(0,229,192,0.15); }
 .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-.btn-ghost:active { color: var(--text); }
-.btn-green { background: var(--green-mid); color: var(--white); }
+.btn-ghost:active { color: var(--text); border-color: var(--accent); }
+.btn-green { background: var(--green-mid); color: var(--accent); border: 1px solid var(--accent); }
 .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn-wa { background: #25D366; color: white; }
 .btn-full { width: 100%; }
@@ -88,81 +91,81 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 .icon-btn:active { border-color: var(--danger); color: var(--danger); }
 
 /* FAB */
-.fab { position: fixed; bottom: calc(var(--nav-h) + 16px); right: 16px; width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 20px rgba(245,197,24,0.4); border: none; color: #111; z-index: 90; transition: transform 0.15s; }
+.fab { position: fixed; bottom: calc(var(--nav-h) + 16px); right: 16px; width: 52px; height: 52px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 0 20px rgba(0,229,192,0.35); border: none; color: #0b0f1a; z-index: 90; transition: transform 0.15s; }
 .fab:active { transform: scale(0.93); }
 .fab.hidden { display: none; }
 
 /* MATCH COLUMNS */
 .match-cols { display: grid; gap: 10px; margin-bottom: 12px; }
-.match-col-header { font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 1px; padding: 8px 10px; border-radius: 8px 8px 0 0; text-align: center; margin-bottom: 0; }
-.match-col-section { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 700; padding: 8px 4px 4px; }
+.match-col-header { font-family: 'Chakra Petch', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; padding: 8px 10px; border-radius: 8px 8px 0 0; text-align: center; margin-bottom: 0; }
+.match-col-section { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); font-weight: 700; padding: 8px 4px 4px; font-family: 'Chakra Petch', sans-serif; }
 
 /* MATCH CARD */
-.match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s; }
+.match-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: border-color 0.15s; overflow: hidden; }
 .match-card:active { border-color: var(--accent); }
-.match-card.past { opacity: 0.65; }
+.match-card.past { opacity: 0.6; }
 .match-date-badge { background: var(--surface2); border-radius: 8px; padding: 6px 8px; text-align: center; flex-shrink: 0; min-width: 42px; }
-.match-day { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--accent); line-height: 1; }
+.match-day { font-family: 'Chakra Petch', sans-serif; font-size: 20px; font-weight: 700; color: var(--accent); line-height: 1; }
 .match-mon { font-size: 10px; color: var(--muted); text-transform: uppercase; }
 .match-info { flex: 1; min-width: 0; }
-.match-opp { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.match-opp { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .match-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.match-result { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: var(--green-light); flex-shrink: 0; }
+.match-result { font-family: 'Chakra Petch', sans-serif; font-size: 18px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
 
 /* FIELD */
-.field-wrap { background: linear-gradient(180deg,#0e3d1a 0%,#144d22 30%,#0e3d1a 50%,#144d22 70%,#0e3d1a 100%); border-radius: var(--radius); border: 1.5px solid rgba(255,255,255,0.08); position: relative; width: 100%; padding-top: 120%; overflow: hidden; margin-bottom: 14px; }
+.field-wrap { background: linear-gradient(180deg,#061814 0%,#0a2018 30%,#061814 50%,#0a2018 70%,#061814 100%); border-radius: var(--radius); border: 1px solid rgba(0,229,192,0.1); position: relative; width: 100%; padding-top: 120%; overflow: hidden; margin-bottom: 14px; }
 .field-inner { position: absolute; inset: 0; }
-.field-line-h { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(255,255,255,0.12); }
-.field-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22%; padding-top: 22%; border: 1px solid rgba(255,255,255,0.12); border-radius: 50%; }
+.field-line-h { position: absolute; left: 8%; right: 8%; top: 50%; height: 1px; background: rgba(0,229,192,0.1); }
+.field-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 22%; padding-top: 22%; border: 1px solid rgba(0,229,192,0.1); border-radius: 50%; }
 .field-rows-container { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-evenly; padding: 14px 10px; }
 .field-row-players { display: flex; justify-content: space-evenly; align-items: center; }
 .field-player { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.field-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); border: 2px solid white; display: flex; align-items: center; justify-content: center; font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: #111; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-.field-dot.empty { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.3); border: 1.5px dashed rgba(255,255,255,0.25); box-shadow: none; }
-.field-dot.loan { background: var(--loan); color: white; }
-.field-pname { font-size: 9px; color: rgba(255,255,255,0.9); text-shadow: 0 1px 4px rgba(0,0,0,0.9); font-weight: 700; white-space: nowrap; }
+.field-dot { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); border: 2px solid white; display: flex; align-items: center; justify-content: center; font-family: 'Chakra Petch', sans-serif; font-size: 13px; font-weight: 700; color: #0b0f1a; box-shadow: 0 0 8px rgba(0,229,192,0.4); }
+.field-dot.empty { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.2); border: 1.5px dashed rgba(255,255,255,0.15); box-shadow: none; }
+.field-dot.loan { background: var(--loan); color: white; box-shadow: 0 0 8px rgba(167,139,250,0.4); }
+.field-pname { font-size: 9px; color: rgba(255,255,255,0.85); text-shadow: 0 1px 4px rgba(0,0,0,0.9); font-weight: 600; white-space: nowrap; }
 
 /* PLAYER SELECT */
 .psel-list { display: flex; flex-direction: column; gap: 5px; max-height: 55vh; overflow-y: auto; }
-.psel-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); background: var(--surface2); cursor: pointer; transition: all 0.12s; }
-.psel-item.selected { border-color: var(--accent); background: rgba(245,197,24,0.07); }
+.psel-item { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface2); cursor: pointer; transition: all 0.12s; }
+.psel-item.selected { border-color: var(--accent); background: rgba(0,229,192,0.06); }
 .psel-item.loan-item.selected { border-color: var(--loan); background: rgba(167,139,250,0.07); }
-.psel-item.coach-item.selected { border-color: var(--coach); background: rgba(56,189,248,0.07); }
-.psel-item.conflict { border-color: rgba(231,76,60,0.5); }
-.psel-item.conflict.selected { background: rgba(231,76,60,0.07); }
+.psel-item.coach-item.selected { border-color: var(--coach); background: rgba(96,165,250,0.07); }
+.psel-item.conflict { border-color: rgba(248,113,113,0.5); }
+.psel-item.conflict.selected { background: rgba(248,113,113,0.07); }
 .check-circle { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; color: var(--accent); flex-shrink: 0; }
-.psel-item.selected .check-circle { border-color: var(--accent); background: rgba(245,197,24,0.2); }
+.psel-item.selected .check-circle { border-color: var(--accent); background: rgba(0,229,192,0.15); }
 .psel-item.loan-item.selected .check-circle { border-color: var(--loan); background: rgba(167,139,250,0.2); color: var(--loan); }
-.psel-item.coach-item.selected .check-circle { border-color: var(--coach); background: rgba(56,189,248,0.2); color: var(--coach); }
-.psel-divider { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 0 3px; font-weight: 700; }
+.psel-item.coach-item.selected .check-circle { border-color: var(--coach); background: rgba(96,165,250,0.2); color: var(--coach); }
+.psel-divider { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 0 3px; font-weight: 700; font-family: 'Chakra Petch', sans-serif; }
 .psel-count { font-size: 11px; color: var(--muted); text-align: right; margin-bottom: 5px; }
 
 /* FORM */
 .form-group { margin-bottom: 12px; }
-.form-group label { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 5px; }
-.form-control { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'Outfit', sans-serif; -webkit-appearance: none; }
-.form-control:focus { outline: none; border-color: var(--green-light); }
+.form-group label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 5px; font-family: 'Chakra Petch', sans-serif; }
+.form-control { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; font-family: 'DM Sans', sans-serif; -webkit-appearance: none; }
+.form-control:focus { outline: none; border-color: var(--accent); }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 /* TABS */
 .tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 2px; }
-.tab { padding: 7px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); color: var(--muted); background: none; font-family: 'Outfit', sans-serif; white-space: nowrap; transition: all 0.15s; }
-.tab.active { background: var(--accent); color: #111; border-color: var(--accent); }
+.tab { padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); color: var(--muted); background: none; font-family: 'DM Sans', sans-serif; white-space: nowrap; transition: all 0.15s; }
+.tab.active { background: var(--accent); color: #0b0f1a; border-color: var(--accent); }
 
 /* SHEET */
-.sheet-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; align-items: flex-end; }
+.sheet-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: flex-end; }
 .sheet-backdrop.open { display: flex; }
-.sheet { background: var(--surface); border-radius: 20px 20px 0 0; padding: 0 20px 32px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.25s ease; max-width: 480px; margin: 0 auto; }
+.sheet { background: var(--surface); border-radius: 16px 16px 0 0; padding: 0 20px 32px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.25s ease; max-width: 480px; margin: 0 auto; border-top: 1px solid rgba(0,229,192,0.1); }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 12px auto 16px; }
-.sheet-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; margin-bottom: 16px; }
+.sheet-title { font-family: 'Chakra Petch', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 16px; }
 .sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
 
 /* WA PREVIEW */
-.wa-bubble { background: #075E54; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #dcf8c6; font-family: -apple-system, sans-serif; word-break: break-word; margin-bottom: 14px; }
+.wa-bubble { background: #075E54; border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #dcf8c6; font-family: -apple-system, sans-serif; word-break: break-word; margin-bottom: 14px; }
 
 /* TOAST */
-.toast { position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface3); border: 1px solid var(--green-light); color: var(--text); padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 300; }
+.toast { position: fixed; bottom: calc(var(--nav-h) + 16px); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface3); border: 1px solid var(--accent); color: var(--text); padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; opacity: 0; transition: all 0.25s; pointer-events: none; white-space: nowrap; z-index: 300; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* EMPTY */
@@ -189,21 +192,21 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 </style>
 </head>
 <body>
-<div id="loginScreen" style="position:fixed;inset:0;background:#0a1a10;display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:16px;padding:24px;">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:42px;letter-spacing:4px;color:#f5c518;">⚽ LAGAPP</div>
+<div id="loginScreen" style="position:fixed;inset:0;background:#0b0f1a;display:flex;align-items:center;justify-content:center;z-index:1000;flex-direction:column;gap:16px;padding:24px;">
+  <div style="font-family:'Chakra Petch',sans-serif;font-size:42px;letter-spacing:4px;color:#f5c518;">⚽ LAGAPP</div>
   <div style="width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;">
-    <input type="password" id="loginPassword" placeholder="Lösenord" style="width:100%;background:#182a1e;border:1.5px solid #243b2c;color:#e4efe7;padding:12px 16px;border-radius:10px;font-size:16px;font-family:Outfit,sans-serif;outline:none;" onkeydown="if(event.key==='Enter')checkLogin()">
+    <input type="password" id="loginPassword" placeholder="Lösenord" style="width:100%;background:#111827;border:1px solid #1e2d45;color:#e2e8f4;padding:12px 16px;border-radius:10px;font-size:16px;font-family:'DM Sans',sans-serif;outline:none;" onkeydown="if(event.key==='Enter')checkLogin()">
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;align-self:flex-start;">
       <input type="checkbox" id="rememberMe" style="width:16px;height:16px;cursor:pointer;accent-color:#f5c518;">
-      <span style="font-size:13px;color:#6a9478;">Kom ihåg mig</span>
+      <span style="font-size:13px;color:#4a6080;">Kom ihåg mig</span>
     </label>
-    <button onclick="checkLogin()" style="width:100%;background:#f5c518;color:#111;border:none;padding:12px;border-radius:10px;font-size:16px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;">Logga in</button>
+    <button onclick="checkLogin()" style="width:100%;background:#00e5c0;color:#0b0f1a;border:none;padding:12px;border-radius:8px;box-shadow:0 0 16px rgba(0,229,192,0.25);font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;">Logga in</button>
     <div id="loginError" style="display:none;color:#e74c3c;font-size:13px;text-align:center;">Fel lösenord, försök igen.</div>
   </div>
 </div>
-<div id="loadingScreen" style="position:fixed;inset:0;background:#0a1a10;display:none;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px;">
-  <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;color:#f5c518;">⚽ LAGAPP</div>
-  <div style="font-size:13px;color:#6a9478;">Laddar data...</div>
+<div id="loadingScreen" style="position:fixed;inset:0;background:#0b0f1a;display:none;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px;">
+  <div style="font-family:'Chakra Petch',sans-serif;font-size:36px;letter-spacing:4px;color:#f5c518;">⚽ LAGAPP</div>
+  <div style="font-size:13px;color:#4a6080;">Laddar data...</div>
 </div>
 <div class="app" id="app" style="display:none;">
 
@@ -482,12 +485,12 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
 
 <!-- Bottom nav -->
 <nav class="bottom-nav">
-  <button class="nav-btn active" onclick="showPage('overview')"  id="nav-overview"><span class="icon">📊</span>Översikt</button>
-  <button class="nav-btn"        onclick="showPage('players')"   id="nav-players"><span class="icon">👥</span>Spelare</button>
-  <button class="nav-btn"        onclick="showPage('lineup')"    id="nav-lineup"><span class="icon">📋</span>Uttagning</button>
-  <button class="nav-btn"        onclick="showPage('matches')"   id="nav-matches"><span class="icon">🏆</span>Matcher</button>
-  <button class="nav-btn"        onclick="showPage('results')"   id="nav-results" style="position:relative;"><span class="icon">📝</span>Resultat<span id="resultsBadge" style="display:none;position:absolute;top:4px;right:calc(50% - 18px);min-width:16px;height:16px;background:#e74c3c;border-radius:8px;font-size:9px;font-weight:700;color:white;display:none;align-items:center;justify-content:center;padding:0 3px;"></span></button>
-  <button class="nav-btn"        onclick="showPage('settings')"  id="nav-settings"><span class="icon">⚙️</span>Inställningar</button>
+  <button class="nav-btn active" onclick="showPage('overview')"  id="nav-overview"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Översikt</button>
+  <button class="nav-btn"        onclick="showPage('players')"   id="nav-players"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.85"/></svg>Spelare</button>
+  <button class="nav-btn"        onclick="showPage('lineup')"    id="nav-lineup"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Uttag</button>
+  <button class="nav-btn"        onclick="showPage('matches')"   id="nav-matches"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Matcher</button>
+  <button class="nav-btn"        onclick="showPage('results')"   id="nav-results" style="position:relative;"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Resultat<span id="resultsBadge" style="display:none;position:absolute;top:4px;right:calc(50% - 18px);min-width:16px;height:16px;background:#f87171;border-radius:8px;font-size:9px;font-weight:700;color:white;display:none;align-items:center;justify-content:center;padding:0 3px;"></span></button>
+  <button class="nav-btn"        onclick="showPage('settings')"  id="nav-settings"><svg class="lucide-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Inst.</button>
 </nav>
 
 <button class="fab hidden" id="fab" onclick="onFab()">＋</button>
@@ -600,7 +603,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
     <div class="sheet-handle"></div>
     <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;">
       <div style="flex:1;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;" id="mdOpp"></div>
+        <div style="font-family:'Chakra Petch',sans-serif;font-size:24px;letter-spacing:1px;" id="mdOpp"></div>
         <div style="font-size:12px;color:var(--muted);margin-top:2px;" id="mdMeta"></div>
       </div>
       <div id="mdLevel" style="margin-top:4px;"></div>
@@ -654,7 +657,7 @@ body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--te
     <div class="sheet-handle"></div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
       <div class="jersey" id="profileJersey" style="width:44px;height:44px;font-size:22px;"></div>
-      <div><div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;" id="profileName"></div><div id="profileMeta" style="font-size:12px;color:var(--muted);margin-top:2px;"></div></div>
+      <div><div style="font-family:'Chakra Petch',sans-serif;font-size:24px;letter-spacing:1px;" id="profileName"></div><div id="profileMeta" style="font-size:12px;color:var(--muted);margin-top:2px;"></div></div>
     </div>
     <div class="stat-grid" style="margin-bottom:14px;">
       <div class="stat-card" style="padding:12px;"><div class="stat-num" style="font-size:30px;" id="profileTotal">0</div><div class="stat-label">Totalt</div></div>
@@ -1221,7 +1224,7 @@ function renderOverview() {
     : recent.map(m=>{const d=new Date(m.date);return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
         <div class="match-date-badge"><div class="match-day">${d.getDate()}</div><div class="match-mon">${d.toLocaleString('sv-SE',{month:'short'})}</div></div>
         <div style="flex:1;"><div style="font-size:14px;font-weight:600;">${m.opp}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;">${levelBadgeHTML(m.levelId)}</div></div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);">${m.result}</div>
+        <div style="font-family:'Chakra Petch',sans-serif;font-size:20px;color:var(--green-light);">${m.result}</div>
       </div>`;}).join('');
 }
 
@@ -1273,26 +1276,51 @@ function renderLevelStats(t) {
     if (levels.length === 0) { el.innerHTML = ''; return; }
 
     const statsRow = (played) => {
-      let wins=0, gs=0, gc=0;
-      played.forEach(m => { const g=parseGoals(m.result); if(!g) return; gs+=g.scored; gc+=g.conceded; if(g.scored>g.conceded) wins++; });
-      return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;">
-        <div style="text-align:center;background:var(--surface);border-radius:6px;padding:8px 4px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--text);line-height:1;">${played.length}</div>
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Matcher</div>
-        </div>
-        <div style="text-align:center;background:var(--surface);border-radius:6px;padding:8px 4px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--green-light);line-height:1;">${wins}</div>
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Vinster</div>
-        </div>
-        <div style="text-align:center;background:var(--surface);border-radius:6px;padding:8px 4px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--accent);line-height:1;">${gs}</div>
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Gjorda mål</div>
-        </div>
-        <div style="text-align:center;background:var(--surface);border-radius:6px;padding:8px 4px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--danger);line-height:1;">${gc}</div>
-          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Insläppta mål</div>
-        </div>
-      </div>`;
+      let wins=0, draws=0, losses=0, gs=0, gc=0;
+      played.forEach(m => { const g=parseGoals(m.result); if(!g) return; gs+=g.scored; gc+=g.conceded; if(g.scored>g.conceded) wins++; else if(g.scored===g.conceded) draws++; else losses++; });
+      return {wins, draws, losses, gs, gc, total: played.length};
+    };
+
+    const statsTable = (lvCats, lvMatches) => {
+      const allPlayed = lvMatches.filter(m => m.result && isMatchPast(m));
+      const tot = statsRow(allPlayed);
+      let catRows = '';
+      lvCats.forEach(cat => {
+        const catPlayed = lvMatches.filter(m => m.categoryId === cat.id && m.result && isMatchPast(m));
+        if (!catPlayed.length) return;
+        const s = statsRow(catPlayed);
+        catRows += `<tr style="border-top:1px solid var(--border);">
+          <td style="font-size:11px;color:var(--muted);padding:5px 0 5px 0;">${cat.name}</td>
+          <td style="font-size:12px;font-weight:600;text-align:center;color:var(--text);">${s.total}</td>
+          <td style="font-size:12px;font-weight:600;text-align:center;color:#00e5c0;">${s.wins}</td>
+          <td style="font-size:12px;font-weight:600;text-align:center;color:var(--muted);">${s.draws}</td>
+          <td style="font-size:12px;font-weight:600;text-align:center;color:#f87171;">${s.losses}</td>
+          <td style="font-size:12px;font-weight:600;text-align:center;color:#f59e0b;">${s.gs}</td>
+          <td style="font-size:12px;font-weight:600;text-align:center;color:#60a5fa;">${s.gc}</td>
+        </tr>`;
+      });
+      const totalRow = tot.total > 0 ? `<tr style="border-top:2px solid rgba(0,229,192,0.15);background:rgba(0,229,192,0.04);">
+        <td style="font-size:10px;font-weight:700;color:var(--accent);padding:6px 0;font-family:'Chakra Petch',sans-serif;letter-spacing:0.5px;">TOTALT</td>
+        <td style="font-size:12px;font-weight:700;text-align:center;color:var(--accent);">${tot.total}</td>
+        <td style="font-size:12px;font-weight:700;text-align:center;color:#00e5c0;">${tot.wins}</td>
+        <td style="font-size:12px;font-weight:700;text-align:center;color:var(--muted);">${tot.draws}</td>
+        <td style="font-size:12px;font-weight:700;text-align:center;color:#f87171;">${tot.losses}</td>
+        <td style="font-size:12px;font-weight:700;text-align:center;color:#f59e0b;">${tot.gs}</td>
+        <td style="font-size:12px;font-weight:700;text-align:center;color:#60a5fa;">${tot.gc}</td>
+      </tr>` : '';
+      return `<table style="width:100%;border-collapse:collapse;margin-top:8px;">
+        <tr>
+          <th style="text-align:left;font-size:9px;color:var(--muted);font-family:'Chakra Petch',sans-serif;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;"></th>
+          <th style="text-align:center;font-size:9px;color:var(--muted);font-family:'Chakra Petch',sans-serif;text-transform:uppercase;padding-bottom:4px;">M</th>
+          <th style="text-align:center;font-size:9px;color:#00e5c0;font-family:'Chakra Petch',sans-serif;text-transform:uppercase;padding-bottom:4px;">V</th>
+          <th style="text-align:center;font-size:9px;color:var(--muted);font-family:'Chakra Petch',sans-serif;text-transform:uppercase;padding-bottom:4px;">O</th>
+          <th style="text-align:center;font-size:9px;color:#f87171;font-family:'Chakra Petch',sans-serif;text-transform:uppercase;padding-bottom:4px;">F</th>
+          <th style="text-align:center;font-size:9px;color:#f59e0b;font-family:'Chakra Petch',sans-serif;text-transform:uppercase;padding-bottom:4px;">GM</th>
+          <th style="text-align:center;font-size:9px;color:#60a5fa;font-family:'Chakra Petch',sans-serif;text-transform:uppercase;padding-bottom:4px;">IM</th>
+        </tr>
+        ${catRows}
+        ${totalRow}
+      </table>`;
     };
 
     let html = '';
@@ -1335,28 +1363,11 @@ function renderLevelStats(t) {
 
       // Category rows inside this level card
       const lvCats = cats.filter(cat => lvMatches.some(m => m.categoryId === cat.id));
-      let catRowsHTML = '';
-      if (lvCats.length > 0) {
-        catRowsHTML = lvCats.map(cat => {
-          const cc = getCategoryColor(cat.id);
-          const catPlayed = lvMatches.filter(m => m.categoryId === cat.id && m.result && isMatchPast(m));
-          return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              <span style="font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;background:${cc.bg};color:${cc.color};">${cat.name}</span>
-            </div>
-            ${statsRow(catPlayed)}
-          </div>`;
-        }).join('');
-      } else {
-        // No categories — show total stats
-        const allPlayed = lvMatches.filter(m => m.result && isMatchPast(m));
-        catRowsHTML = statsRow(allPlayed);
-      }
 
       html += `<div class="card" style="margin-bottom:10px;border-color:${c.color}33;">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:${c.color};margin-bottom:10px;">${lv.name}</div>
+        <div style="font-family:'Chakra Petch',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.5px;color:${c.color};margin-bottom:10px;">${lv.name}</div>
         ${nextMatchHTML}
-        ${catRowsHTML}
+        ${statsTable(lvCats, lvMatches)}
       </div>`;
     });
 
@@ -1388,11 +1399,11 @@ function renderPlayerFilterBar() {
   const levels = getLevels();
   if (levels.length===0) { el.innerHTML=''; return; }
   const allActive = playerLevelFilter===null;
-  let html = `<button onclick="setPlayerLevelFilter(null)" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${allActive?'var(--accent)':'var(--border)'};background:${allActive?'rgba(245,197,24,0.1)':'transparent'};color:${allActive?'var(--accent)':'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;">Alla</button>`;
+  let html = `<button onclick="setPlayerLevelFilter(null)" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${allActive?'var(--accent)':'var(--border)'};background:${allActive?'rgba(245,197,24,0.1)':'transparent'};color:${allActive?'var(--accent)':'var(--muted)'};cursor:pointer;font-family:'DM Sans',sans-serif;">Alla</button>`;
   levels.forEach(lv => {
     const c = getLevelColor(lv.id);
     const on = playerLevelFilter===lv.id;
-    html += `<button onclick="setPlayerLevelFilter('${lv.id}')" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${on?c.color:'var(--border)'};background:${on?c.bg:'transparent'};color:${on?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;">${lv.name}</button>`;
+    html += `<button onclick="setPlayerLevelFilter('${lv.id}')" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${on?c.color:'var(--border)'};background:${on?c.bg:'transparent'};color:${on?c.color:'var(--muted)'};cursor:pointer;font-family:'DM Sans',sans-serif;">${lv.name}</button>`;
   });
   el.innerHTML = html;
 }
@@ -1457,7 +1468,7 @@ function playerRowHTML(p, maxM, cnt) {
       ${levelNames?`<div style="font-size:11px;color:var(--muted);margin-top:3px;">${levelNames}</div>`:''}
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:${loadColor};line-height:1;">${cnt}</div>
+      <div style="font-family:'Chakra Petch',sans-serif;font-size:22px;color:${loadColor};line-height:1;">${cnt}</div>
       <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">matcher</div>
     </div>
     <button class="icon-btn" onclick="event.stopPropagation();removePlayer(${p.id})">✕</button>
@@ -1473,7 +1484,7 @@ function coachRowHTML(c, maxM, cnt) {
       <div class="player-meta"><span class="badge badge-coach">${c.role}</span></div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--coach);line-height:1;">${cnt}</div>
+      <div style="font-family:'Chakra Petch',sans-serif;font-size:22px;color:var(--coach);line-height:1;">${cnt}</div>
       <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">matcher</div>
     </div>
     <button class="icon-btn" onclick="removeCoach(${c.id})">✕</button>
@@ -1607,7 +1618,7 @@ function openPlayerProfile(pid) {
     : sorted.map(m=>{const d=new Date(m.date);return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);">
         <div class="match-date-badge"><div class="match-day">${d.getDate()}</div><div class="match-mon">${d.toLocaleString('sv-SE',{month:'short'})}</div></div>
         <div style="flex:1;"><div style="font-size:13px;font-weight:600;">${m.opp}</div><div style="margin-top:2px;">${levelBadgeHTML(m.levelId)}</div></div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--green-light);">${m.result||'–'}</div>
+        <div style="font-family:'Chakra Petch',sans-serif;font-size:18px;color:var(--green-light);">${m.result||'–'}</div>
       </div>`;}).join('');
   openSheet('playerProfileSheet');
 }
@@ -1690,7 +1701,7 @@ function renderSavedLineups() {
     return `<div style="margin-bottom:6px;border-radius:10px;border:1.5px solid ${isSelected?'var(--accent)':'var(--border)'};overflow:hidden;opacity:${isPast?'0.6':'1'};">
       <div onclick="toggleSavedLineup(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 10px;background:${isSelected?'rgba(245,197,24,0.06)':'var(--surface2)'};cursor:pointer;">
         <div style="min-width:38px;text-align:center;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
+          <div style="font-family:'Chakra Petch',sans-serif;font-size:18px;color:var(--accent);line-height:1;">${d.getDate()}</div>
           <div style="font-size:10px;color:var(--muted);">${d.toLocaleString('sv-SE',{month:'short'})}</div>
         </div>
         <div style="flex:1;min-width:0;">
@@ -1806,14 +1817,14 @@ function renderLineupFilterBar(m) {
 
   // Availability filter button
   if (hasAvail) {
-    html += `<button onclick="setAvailFilter()" style="padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;border:1.5px solid ${lineupAvailFilter?'var(--green-light)':'var(--border)'};background:${lineupAvailFilter?'rgba(61,186,116,0.15)':'transparent'};color:${lineupAvailFilter?'var(--green-light)':'var(--muted)'};">✅ Bara tillgängliga</button>`;
+    html += `<button onclick="setAvailFilter()" style="padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid ${lineupAvailFilter?'var(--green-light)':'var(--border)'};background:${lineupAvailFilter?'rgba(61,186,116,0.15)':'transparent'};color:${lineupAvailFilter?'var(--green-light)':'var(--muted)'};">✅ Bara tillgängliga</button>`;
   }
 
   // Level filter buttons
   levels.forEach(lv => {
     const c = getLevelColor(lv.id);
     const active = lineupLevelFilter === lv.id;
-    html += `<button onclick="setLevelFilter('${lv.id}')" style="padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};">${lv.name}</button>`;
+    html += `<button onclick="setLevelFilter('${lv.id}')" style="padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};">${lv.name}</button>`;
   });
 
   bar.innerHTML = html;
@@ -2168,7 +2179,7 @@ function updateLineupModeUI() {
           ${levelNames?`<div style="font-size:11px;color:var(--muted);margin-top:2px;">${levelNames}</div>`:''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;margin-right:6px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${loadColor};line-height:1;">${cnt}</div>
+          <div style="font-family:'Chakra Petch',sans-serif;font-size:20px;color:${loadColor};line-height:1;">${cnt}</div>
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">matcher</div>
         </div>
       </div>`;
@@ -2383,14 +2394,14 @@ function renderResults() {
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
           <input type="number" value="${gf}" placeholder="–" min="0" max="99" id="gf-${i}"
-            style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:Outfit,sans-serif;"
+            style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--green-light)':'var(--text)'};font-family:'DM Sans',sans-serif;"
             oninput="validateGoalInput(this)"
             onkeydown="if(event.key==='Enter'){this.blur();}">
         </div>
         <div style="font-size:16px;color:var(--muted);font-weight:700;margin-top:10px;">–</div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
           <input type="number" value="${ga}" placeholder="–" min="0" max="99" id="ga-${i}"
-            style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--muted)':'var(--text)'};font-family:Outfit,sans-serif;"
+            style="width:38px;text-align:center;font-size:16px;font-weight:700;padding:4px 2px;border-radius:6px;border:1.5px solid ${hasResult?'var(--border)':'rgba(231,76,60,0.35)'};background:var(--surface);color:${hasResult?'var(--muted)':'var(--text)'};font-family:'DM Sans',sans-serif;"
             oninput="validateGoalInput(this)"
             onkeydown="if(event.key==='Enter'){this.blur();}">
         </div>
@@ -2522,7 +2533,7 @@ function renderMatchFilterBar() {
     const bg = active ? (color||'var(--accent)') : 'transparent';
     const border = active ? (color||'var(--accent)') : 'var(--border)';
     const txt = active ? (color ? color : 'var(--bg)') : 'var(--muted)';
-    return `<button onclick="${onclick}" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${txt};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;transition:all 0.1s;">${label}</button>`;
+    return `<button onclick="${onclick}" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${border};background:${bg};color:${txt};cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;transition:all 0.1s;">${label}</button>`;
   };
 
   const t2 = getTeam();
@@ -2536,7 +2547,7 @@ function renderMatchFilterBar() {
   let row1 = '<div style="display:flex;gap:5px;margin-bottom:5px;">';
   row1 += chip('Kommande', matchFilterPeriod==='upcoming', "setMatchFilter('period','upcoming')", null);
   row1 += chip('Spelade', matchFilterPeriod==='past', "setMatchFilter('period','past')", null);
-  if (hasActive) row1 += `<button onclick="clearMatchFilters()" style="margin-left:auto;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:Outfit,sans-serif;">✕</button>`;
+  if (hasActive) row1 += `<button onclick="clearMatchFilters()" style="margin-left:auto;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1.5px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;">✕</button>`;
   row1 += '</div>';
 
   // Row 2: levels + categories
@@ -2544,12 +2555,12 @@ function renderMatchFilterBar() {
   activeLevels.forEach(lv => {
     const c = getLevelColor(lv.id);
     const active = matchFilterLevel === lv.id;
-    row2chips.push(`<button onclick="setMatchFilter('level','${lv.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${lv.name}</button>`);
+    row2chips.push(`<button onclick="setMatchFilter('level','${lv.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">${lv.name}</button>`);
   });
   activeCats.forEach(cat => {
     const c = getCategoryColor(cat.id);
     const active = matchFilterCat === cat.id;
-    row2chips.push(`<button onclick="setMatchFilter('cat','${cat.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:Outfit,sans-serif;white-space:nowrap;">${cat.name}</button>`);
+    row2chips.push(`<button onclick="setMatchFilter('cat','${cat.id}')" style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid ${active?c.color:'var(--border)'};background:${active?c.bg:'transparent'};color:${active?c.color:'var(--muted)'};cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">${cat.name}</button>`);
   });
 
   let row2 = row2chips.length > 0 ? '<div style="display:flex;flex-wrap:wrap;gap:5px;">' + row2chips.join('') + '</div>' : '';
@@ -2616,11 +2627,11 @@ function renderMatchColumns() {
   const showPast = matchFilterPeriod !== 'upcoming';
 
   if (showUpcoming && upcoming.length > 0) {
-    html += `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;padding:4px 0 8px;">Kommande</div>`;
+    html += `<div style="font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;padding:4px 0 8px;font-family:'Chakra Petch',sans-serif;">Kommande</div>`;
     html += renderWeekGroups(upcoming, today, false);
   }
   if (showPast && past.length > 0) {
-    html += `<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:700;padding:12px 0 8px;">Spelade</div>`;
+    html += `<div style="font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;padding:12px 0 8px;font-family:'Chakra Petch',sans-serif;">Spelade</div>`;
     html += renderWeekGroups(past, today, true);
   }
   if (!html) html = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Inga matcher matchar filtret</div></div>';
@@ -2692,7 +2703,7 @@ function matchCardHTML(m, i, isPast) {
           ${teamGroupBadgeHTML(m.teamGroup)}
           ${lineupTag}
         </div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--green-light);flex-shrink:0;">${m.result||'–'}</div>
+        <div style="font-family:'Chakra Petch',sans-serif;font-size:20px;color:var(--green-light);flex-shrink:0;">${m.result||'–'}</div>
       </div>
       <div style="font-size:11px;color:var(--muted);">${dayStr}${metaParts?' · '+metaParts:''}</div>
     </div>
