@@ -2300,9 +2300,10 @@ function buildWAMessage() {
     if (!m) return;
     const d = new Date(m.date);
     const lv = getLevelById(m.levelId);
-    const sel = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
+    const allSel = (m.lineup||[]).map(id=>playerMap[id]).filter(Boolean);
     const coaches = (m.coaches||[]).map(id=>coachMap[id]).filter(Boolean);
-    const loans = sel.filter(p=>p.type==='loan');
+    const regular = allSel.filter(p=>p.type!=='loan');
+    const loans   = allSel.filter(p=>p.type==='loan');
     if (selected.length > 1) text += `\n${'─'.repeat(24)}\n`;
     text += `\n🏟 ${m.opp}\n`;
     text += `📅 ${d.toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'})}\n`;
@@ -2310,9 +2311,9 @@ function buildWAMessage() {
     if (m.gather) text += `⏰ Samling kl. ${m.gather}\n`;
     if (m.kickoff) text += `⚽ Avspark: ${m.kickoff}${m.duration?' ('+m.duration+' min)':''}\n`;
     if (lv) text += `🎮 Nivå: ${lv.name}\n`;
-    text += `\nSTARTUPPSTÄLLNING:\n${sel.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
-    if (coaches.length) text+=`\n🧢 Tränare:\n${coaches.map(c=>`  ${c.first} ${c.last} (${c.role})`).join('\n')}\n`;
+    text += `\nSTARTUPPSTÄLLNING:\n${regular.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
     if (loans.length) text+=`\n🔄 Inlånade:\n${loans.map(p=>`  #${p.jersey} ${p.first} ${p.last}`).join('\n')}\n`;
+    if (coaches.length) text+=`\n🧢 Tränare:\n${coaches.map(c=>`  ${c.first} ${c.last} (${c.role})`).join('\n')}\n`;
   });
   text += `\n– Lagledningen`;
   document.getElementById('waBubble').textContent = text;
@@ -2407,6 +2408,7 @@ function renderResults() {
         </div>
         </div>
         <button onclick="saveResultDirect(${i})" style="padding:7px 10px;border-radius:6px;background:var(--green-light);color:#111;border:none;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;">✓</button>
+        <button onclick="saveWO(${i})" style="padding:7px 8px;border-radius:6px;background:transparent;color:var(--danger);border:1px solid var(--danger);font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;font-family:'DM Sans',sans-serif;">WO</button>
       </div>
     </div>
     </div>`;
@@ -2438,6 +2440,19 @@ function showSaveBtn(idx) {
   const gf = pairs[pos][0].value;
   const ga = pairs[pos][1].value;
   btn.style.display = (gf !== '' && ga !== '') ? 'block' : 'none';
+}
+
+function saveWO(idx) {
+  const t = getTeam();
+  const m = (t.matches||[])[idx];
+  if (!m) return;
+  if (!confirm(`Sätt WO (walkover) på matchen mot ${m.opp}?`)) return;
+  m.result = 'WO';
+  save();
+  renderResults();
+  renderMatchColumns();
+  renderOverview();
+  showToast(`⚠️ WO registrerat — ${m.opp}`);
 }
 
 function saveResultDirect(idx) {
